@@ -346,6 +346,53 @@ class TestUR(BaseClass):
 
         assert(encoder.seq_len() == generated_parts_count)
 
+    
+    def test_process_mixed_part_non_simple(self):
+        d = FountainDecoder()
+
+        # Fake expected state (normally set by validate_part)
+        d.expected_part_indexes = {0, 1, 2}
+
+        # Create a mixed part: indexes {0,1}
+        p = FountainDecoder.Part(
+            indexes={0, 1},
+            data=bytearray(b'\x01\x02\x03')
+        )
+
+        assert not p.is_simple()
+
+        d.process_mixed_part(p)
+
+        # It should be stored as a mixed part
+        assert p.indexes in d.mixed_parts
+        assert d.mixed_parts[p.indexes] is p
+
+
+    def test_process_mixed_part_reduces_to_simple(self):
+        d = FountainDecoder()
+
+        # Known simple part
+        simple = FountainDecoder.Part(
+            indexes={0},
+            data=bytearray(b'\x01\x02')
+        )
+        d.simple_parts[simple.indexes] = simple
+
+        # Mixed part including that index
+        mixed = FountainDecoder.Part(
+            indexes={0, 1},
+            data=bytearray(b'\x05\x06')
+        )
+
+        d.process_mixed_part(mixed)
+
+        # Reduction should enqueue a simple part
+        assert len(d.queued_parts) == 1
+        reduced = d.queued_parts[0]
+        assert reduced.is_simple()
+        assert reduced.indexes == {1}
+
+
 
     def test_fountain_decoder(self):
         message_seed = "Wolf"

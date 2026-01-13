@@ -51,8 +51,19 @@ Either `hashlib` in a normal Python environment or `uhashlib` in MicroPython mus
 
 Before accepting a PR that can affect build or unit tests, make sure the following command succeeds:
 
+Development install:
 ```
-python test.py
+poetry install
+```
+
+Execute tests:
+```
+poetry run pytest test.py
+```
+
+See coverage:
+```
+poetry run pytest --cov=ur --cov-report=term-missing --cov-report=html
 ```
 
 Ensure that you add new unit tests for new or modified functionality.

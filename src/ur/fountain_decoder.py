@@ -127,7 +127,7 @@ class FountainDecoder:
         # Reduce all the current mixed parts by the given part
         reduced_parts = []
         for value in self.mixed_parts.values():
-            reduced_parts.append(self.reduce_part_by_part(value, p))
+            reduced_parts.append(self.reduced_part_by_part(value, p))
 
         # Collect all the remaining mixed parts
         new_mixed = {}
@@ -142,7 +142,7 @@ class FountainDecoder:
 
         self.mixed_parts = new_mixed
 
-    def reduce_part_by_part(self, a, b):
+    def reduced_part_by_part(self, a, b):
         # If the fragments mixed into `b` are a strict (proper) subset of those in `a`...
         if is_strict_subset(b.indexes, a.indexes):
             # The new fragments in the revised part are `a` - `b`.
@@ -197,22 +197,22 @@ class FountainDecoder:
                 return
 
         # Reduce this part by all the others
-        p2 = p  # TODO: Does this need to make a copy of p?
+        reduced = p
         for r in self.simple_parts.values():
-            p2 = self.reduce_part_by_part(p2, r)
+            reduced = self.reduced_part_by_part(reduced, r)
 
         for r in self.mixed_parts.values():
-            p2 = self.reduce_part_by_part(p2, r)
+            reduced = self.reduced_part_by_part(reduced, r)
 
         # If the part is now simple
-        if p2.is_simple():
+        if reduced.is_simple():
             # Add it to the queue
-            self.enqueue(p2)
+            self.enqueue(reduced)
         else:
             # Reduce all the mixed parts by this one
-            self.reduce_mixed_by(p2)
+            self.reduce_mixed_by(reduced)
             # Record this new mixed part
-            self.mixed_parts[p2.indexes] = p2
+            self.mixed_parts[reduced.indexes] = reduced
 
     def validate_part(self, p):
         # If this is the first part we've seen
