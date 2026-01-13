@@ -45,10 +45,6 @@ def partition(s, n):
 def split(buf, count):
     return (buf[0:count], buf[count:])
 
-def join_lists(lists):
-    # return [y for x in lists for y in x]
-    return sum(lists, [])
-
 def join_bytes(list_of_ba):
     out = bytearray()
     for ba in list_of_ba:
