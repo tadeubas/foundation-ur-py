@@ -12,7 +12,9 @@ except:
 
 from test_utils import make_message, make_message_ur
 
-from ur.bytewords import *
+from ur.bytewords import STYLE_STANDARD, STYLE_URI, STYLE_MINIMAL
+from ur.bytewords.bytewords_decode import BytewordsDecoder
+from ur.bytewords.bytewords_encode import BytewordsEncoder
 from ur.utils import crc32_bytes, crc32_int, data_to_hex, bytes_to_int, string_to_bytes, xor_into
 from ur.xoshiro256 import Xoshiro256
 from ur.random_sampler import RandomSampler
@@ -51,25 +53,25 @@ class TestUR(BaseClass):
 
     def test_bytewords_1(self):
         input = bytes([0, 1, 2, 128, 255])
-        assert(Bytewords.encode(Bytewords_Style_standard, input) == "able acid also lava zoom jade need echo taxi")
-        assert(Bytewords.encode(Bytewords_Style_uri, input) == "able-acid-also-lava-zoom-jade-need-echo-taxi")
-        assert(Bytewords.encode(Bytewords_Style_minimal, input) == "aeadaolazmjendeoti")
+        assert(BytewordsEncoder.encode(STYLE_STANDARD, input) == "able acid also lava zoom jade need echo taxi")
+        assert(BytewordsEncoder.encode(STYLE_URI, input) == "able-acid-also-lava-zoom-jade-need-echo-taxi")
+        assert(BytewordsEncoder.encode(STYLE_MINIMAL, input) == "aeadaolazmjendeoti")
 
-        assert(Bytewords.decode(Bytewords_Style_standard, "able acid also lava zoom jade need echo taxi") == input)
-        assert(Bytewords.decode(Bytewords_Style_uri, "able-acid-also-lava-zoom-jade-need-echo-taxi") == input)
-        assert(Bytewords.decode(Bytewords_Style_minimal, "aeadaolazmjendeoti") == input)
+        assert(BytewordsDecoder.decode(STYLE_STANDARD, "able acid also lava zoom jade need echo taxi") == input)
+        assert(BytewordsDecoder.decode(STYLE_URI, "able-acid-also-lava-zoom-jade-need-echo-taxi") == input)
+        assert(BytewordsDecoder.decode(STYLE_MINIMAL, "aeadaolazmjendeoti") == input)
 
         # bad checksum
-        self.assertRaises(ValueError, lambda: Bytewords.decode(Bytewords_Style_standard, "able acid also lava zoom jade need echo wolf"))
+        self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_STANDARD, "able acid also lava zoom jade need echo wolf"))
 
-        self.assertRaises(ValueError, lambda: Bytewords.decode(Bytewords_Style_uri, "able-acid-also-lava-zoom-jade-need-echo-wolf"))
+        self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_URI, "able-acid-also-lava-zoom-jade-need-echo-wolf"))
 
-        self.assertRaises(ValueError, lambda: Bytewords.decode(Bytewords_Style_minimal, "aeadaolazmjendeowf"))
+        self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_MINIMAL, "aeadaolazmjendeowf"))
 
         # too short
-        self.assertRaises(ValueError, lambda: Bytewords.decode(Bytewords_Style_standard, "wolf"))
+        self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_STANDARD, "wolf"))
         
-        self.assertRaises(ValueError, lambda: Bytewords.decode(Bytewords_Style_standard, ""))
+        self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_STANDARD, ""))
 
     def test_bytewords_2(self):
         input = bytes([
@@ -106,10 +108,10 @@ class TestUR(BaseClass):
             "fhecwzonnbmhcybtgwwelpflgmfezeonledtgocs" + \
             "fzhycypf"
 
-        assert(Bytewords.encode(Bytewords_Style_standard, input) == encoded)
-        assert(Bytewords.encode(Bytewords_Style_minimal, input) == encoded_minimal)
-        assert(Bytewords.decode(Bytewords_Style_standard, encoded) == input)
-        assert(Bytewords.decode(Bytewords_Style_minimal, encoded_minimal) == input)
+        assert(BytewordsEncoder.encode(STYLE_STANDARD, input) == encoded)
+        assert(BytewordsEncoder.encode(STYLE_MINIMAL, input) == encoded_minimal)
+        assert(BytewordsDecoder.decode(STYLE_STANDARD, encoded) == input)
+        assert(BytewordsDecoder.decode(STYLE_MINIMAL, encoded_minimal) == input)
 
 
     def test_rng_1(self):
