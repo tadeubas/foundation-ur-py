@@ -51,65 +51,44 @@ Either `hashlib` in a normal Python environment or `uhashlib` in MicroPython mus
 
 Before accepting a PR that can affect build or unit tests, make sure the following command succeeds:
 
-Development install:
+Development **install**:
 ```
 poetry install
 ```
 
-Execute tests:
+Execute **tests**:
 ```
 poetry run pytest test.py
 ```
 
-See coverage:
+See **coverage**:
 ```
 poetry run pytest --cov=ur --cov-report=term-missing --cov-report=html
 ```
 
 Ensure that you add new unit tests for new or modified functionality.
 
+**Before commit, check pylint and vulture**:
+```
+poetry run pylint src
+poetry run vulture src
+```
+
+Remember to **format new files with black**:
+```
+poetry run black src/ur/<new_file.py>
+```
+
 ## Origin, Authors, Copyright & Licenses
 
-Unless otherwise noted (either in this [/README.md](./README.md) or in the file's header comments) the contents of this repository are Copyright © 2020 Foundation Devices, Inc., and are [licensed](./LICENSE) under the [spdx:BSD-2-Clause Plus Patent License](https://spdx.org/licenses/BSD-2-Clause-Patent.html).
+Unless otherwise noted (either in this [/README.md](./README.md) or in the file's header comments) the contents of this repository are Copyright © 2020 Foundation Devices, Inc. and Contributors, and are [licensed](./LICENSE) under the [spdx:BSD-2-Clause Plus Patent License](https://spdx.org/licenses/BSD-2-Clause-Patent.html).
 
 This code is a Python port of the original C++ reference implementation by Blockchain Commons.  See
 [Blockchain Commons UR Library](https://github.com/BlockchainCommons/bc-ur) for the original version.
 
 ## Contributing
 
-TBD
-
-We encourage public contributions through issues and pull-requests! Please review [CONTRIBUTING.md](./CONTRIBUTING.md) for details on our development process. All contributions to this repository require a GPG signed [Contributor License Agreement](./CLA.md).
-
-### Questions & Support
-
-If you have questions or problems, please use this repository's [issues](./issues) feature.
-
-### Credits
-
-The following people directly contributed to this repository. You can add your name here by getting involved — the first step is to learn how to contribute from our [CONTRIBUTING.md](./CONTRIBUTING.md) documentation.
-
-| Name          | Role         | Github                                             | Email                         | GPG Fingerprint |
-| ------------- | ------------ | -------------------------------------------------- | ----------------------------- | --------------- |
-| Ken Carpenter | Initial Port | [@FoundationKen](https://github.com/FoundationKen) | \<ken@foundationdevices.com\> | TBD             |
-
-## Responsible Disclosure
-
-We want to keep all our software safe for everyone. If you have discovered a security vulnerability, we appreciate your help in disclosing it to us in a responsible manner. We are unfortunately not able to offer bug bounties at this time.
-
-We do ask that you offer us good faith and use best efforts not to leak information or harm any user, their data, or our developer community. Please give us a reasonable amount of time to fix the issue before you publish it. Do not defraud our users or us in the process of discovery. We promise not to bring legal action against researchers who point out a problem provided they do their best to follow the these guidelines.
-
-### Reporting a Vulnerability
-
-Please report suspected security vulnerabilities in private via email to ken@foundationdevices.com (do not use this email for support). Please do NOT create publicly viewable issues for suspected security vulnerabilities.
-
-The following keys may be used to communicate sensitive information to developers:
-
-| Name                      | Fingerprint   |
-| ------------------------- | ------------- |
-| ken@foundationdevices.com | Coming Soon.. |
-
-You can import a key by running the following command with that individual’s fingerprint: `gpg --recv-keys "<fingerprint>"` Ensure that you put quotes around fingerprints that contain spaces.
+We encourage public contributions through issues and pull-requests! Please review [CONTRIBUTING.md](./CONTRIBUTING.md) for details on our development process.
 
 ## Version History
 

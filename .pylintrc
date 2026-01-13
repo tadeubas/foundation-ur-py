@@ -1,0 +1,12 @@
+[MESSAGES CONTROL]
+disable=
+    missing-module-docstring,   # C0114
+    missing-class-docstring,    # C0115
+    missing-function-docstring, # C0116
+    invalid-name,               # C0103
+    consider-using-f-string,    # C0209
+    line-too-long,              # C0301
+    trailing-whitespace,        # C0303
+    unsubscriptable-object,     # E1136
+    too-few-public-methods,     # R0903
+    broad-exception-raised,     # W0719
