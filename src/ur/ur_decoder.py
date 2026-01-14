@@ -10,6 +10,7 @@ from .fountain_encoder import Part as FountainEncoderPart
 from .fountain_decoder import FountainDecoder
 from .bytewords.bytewords_decode import BytewordsDecoder, STYLE_MINIMAL
 from .utils import drop_first, is_ur_type
+from .basic_decoder import BasicDecoder
 
 
 class InvalidScheme(Exception):
@@ -28,11 +29,11 @@ class InvalidSequenceComponent(Exception):
     pass
 
 
-class URDecoder:
+class URDecoder(BasicDecoder):
     def __init__(self):
+        super().__init__()
         self.fountain_decoder = FountainDecoder()
         self.expected_type = None
-        self.result = None
 
     @staticmethod
     def decode(_str):
@@ -153,20 +154,3 @@ class URDecoder:
 
     def estimated_percent_complete(self):
         return self.fountain_decoder.estimated_percent_complete()
-
-    def is_success(self):
-        result = self.result
-        return result if not isinstance(result, Exception) else False
-
-    def is_failure(self):
-        result = self.result
-        return result if isinstance(result, Exception) else False
-
-    def is_complete(self):
-        return self.result is not None
-
-    def result_message(self):
-        return self.result
-
-    def result_error(self):
-        return self.result

@@ -8,6 +8,7 @@ disable=
     line-too-long,                  # C0301
     trailing-whitespace,            # C0303
     unsubscriptable-object,         # E1136
+    too-many-instance-attributes,   # R0902
     too-few-public-methods,         # R0903
     too-many-return-statements,     # R0911
     too-many-branches,              # R0912

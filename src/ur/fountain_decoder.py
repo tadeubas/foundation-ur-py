@@ -8,31 +8,23 @@
 from .fountain_utils import choose_fragments, contains, is_strict_subset, set_difference
 from .utils import join_bytes, xor_with, take_first
 from .crc32 import crc32
-
-
-class InvalidPart(Exception):
-    pass
+from .basic_decoder import BasicDecoder
 
 
 class InvalidChecksum(Exception):
     pass
 
 
-class FountainDecoder:
+class FountainDecoder(BasicDecoder):
     class Part:
         def __init__(self, indexes, data):
             self.indexes = frozenset(indexes)
             self.data = data
+            # self.index = next(iter(self.indexes)) if len(self.indexes) == 1 else None
 
         @classmethod
         def from_encoder_part(cls, p):
             return cls(choose_fragments(p.seq_num, p.seq_len, p.checksum), p.data[:])
-
-        def indexes(self):
-            return self.indexes
-
-        def data(self):
-            return self.data
 
         def is_simple(self):
             return len(self.indexes) == 1
@@ -43,10 +35,10 @@ class FountainDecoder:
 
     # FountainDecoder
     def __init__(self):
+        super().__init__()
         self.received_part_indexes = set()
         self.last_part_indexes = None
         self.processed_parts_count = 0
-        self.result = None
         self.expected_part_indexes = None
         self.expected_fragment_len = None
         self.expected_message_len = None
@@ -58,27 +50,10 @@ class FountainDecoder:
     def expected_part_count(self):
         return len(self.expected_part_indexes)  # TODO: Handle None?
 
-    def is_success(self):
-        result = self.result
-        return result if not isinstance(result, Exception) else False
-
-    def is_failure(self):
-        result = self.result
-        return result if isinstance(result, Exception) else False
-
-    def is_complete(self):
-        return self.result != None
-
-    def result_message(self):
-        return self.result
-
-    def result_error(self):
-        return self.result
-
     def estimated_percent_complete(self):
         if self.is_complete():
             return 1
-        if self.expected_part_indexes == None:
+        if self.expected_part_indexes is None:
             return 0
         estimated_input_parts = self.expected_part_count() * 1.75
         return min(0.99, self.processed_parts_count / estimated_input_parts)
@@ -154,9 +129,9 @@ class FountainDecoder:
             # The new data in the revised part are `a` XOR `b`
             new_data = xor_with(bytearray(a.data), b.data)
             return self.Part(new_indexes, new_data)
-        else:
-            # `a` is not reducable by `b`, so return a
-            return a
+
+        # `a` is not reducable by `b`, so return a
+        return a
 
     def process_simple_part(self, p):
         # Don't process duplicate parts
@@ -220,7 +195,7 @@ class FountainDecoder:
 
     def validate_part(self, p):
         # If this is the first part we've seen
-        if self.expected_part_indexes == None:
+        if self.expected_part_indexes is None:
             # Record the things that all the other parts we see will have to match to be valid.
             self.expected_part_indexes = set()
             for i in range(p.seq_len):
@@ -244,54 +219,53 @@ class FountainDecoder:
         return True
 
     # debugging
-    def indexes_to_string(self, indexes):
-        i = list(indexes)
-        i.sort()
-        s = [str(j) for j in i]
-        return "[{}]".format(", ".join(s))
+    # def indexes_to_string(self, indexes):
+    #     i = list(indexes)
+    #     i.sort()
+    #     s = [str(j) for j in i]
+    #     return "[{}]".format(", ".join(s))
 
-    def result_description(self):
-        if self.result == None:
-            return "None"
+    # def result_description(self):
+    #     if self.result is None:
+    #         return "None"
 
-        if self.is_success():
-            return "{} bytes".format(len(self.result))
-        elif self.is_failure():
-            return "Exception: {}".format(self.result)
-        else:
-            assert False
+    #     if self.is_success():
+    #         return "{} bytes".format(len(self.result))
+    #     if self.is_failure():
+    #         return "Exception: {}".format(self.result)
+    #     assert False
 
-    def print_part(self, p):
-        print("part indexes: {}".format(self.indexes_to_string(p.indexes)))
+    # def print_part(self, p):
+    #     print("part indexes: {}".format(self.indexes_to_string(p.indexes)))
 
-    def print_part_end(self):
-        expected = (
-            self.expected_part_count() if self.expected_part_indexes != None else "None"
-        )
-        percent = int(round(self.estimated_percent_complete() * 100))
-        print(
-            "processed: {}, expected: {}, received: {}, percent: {}%".format(
-                self.processed_parts_count,
-                expected,
-                len(self.received_part_indexes),
-                percent,
-            )
-        )
+    # def print_part_end(self):
+    #     expected = (
+    #         self.expected_part_count() if self.expected_part_indexes is not None else "None"
+    #     )
+    #     percent = int(round(self.estimated_percent_complete() * 100))
+    #     print(
+    #         "processed: {}, expected: {}, received: {}, percent: {}%".format(
+    #             self.processed_parts_count,
+    #             expected,
+    #             len(self.received_part_indexes),
+    #             percent,
+    #         )
+    #     )
 
-    def print_state(self):
-        parts = (
-            self.expected_part_count() if self.expected_part_indexes != None else "None"
-        )
-        received = self.indexes_to_string(self.received_part_indexes)
-        mixed = []
-        for indexes, p in self.mixed_parts.items():
-            mixed.append(self.indexes_to_string(indexes))
+    # def print_state(self):
+    #     parts = (
+    #         self.expected_part_count() if self.expected_part_indexes is not None else "None"
+    #     )
+    #     received = self.indexes_to_string(self.received_part_indexes)
+    #     mixed = []
+    #     for indexes, _ in self.mixed_parts.items():
+    #         mixed.append(self.indexes_to_string(indexes))
 
-        mixed_s = "[{}]".format(", ".join(mixed))
-        queued = len(self.queued_parts)
-        res = self.result_description()
-        print(
-            "parts: {}, received: {}, mixed: {}, queued: {}, result: {}".format(
-                parts, received, mixed_s, queued, res
-            )
-        )
+    #     mixed_s = "[{}]".format(", ".join(mixed))
+    #     queued = len(self.queued_parts)
+    #     res = self.result_description()
+    #     print(
+    #         "parts: {}, received: {}, mixed: {}, queued: {}, result: {}".format(
+    #             parts, received, mixed_s, queued, res
+    #         )
+    #     )
