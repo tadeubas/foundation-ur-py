@@ -20,18 +20,18 @@ class FountainDecoder(BasicDecoder):
         def __init__(self, indexes, data):
             self.indexes = frozenset(indexes)
             self.data = data
-            # self.index = next(iter(self.indexes)) if len(self.indexes) == 1 else None
+            # cache its index once if simple part
+            self._index = next(iter(self.indexes)) if len(self.indexes) == 1 else None
+
+        def is_simple(self):
+            return self._index is not None
+
+        def index(self):
+            return self._index
 
         @classmethod
         def from_encoder_part(cls, p):
             return cls(choose_fragments(p.seq_num, p.seq_len, p.checksum), p.data[:])
-
-        def is_simple(self):
-            return len(self.indexes) == 1
-
-        def index(self):
-            # TODO: Not efficient
-            return list(self.indexes)[0]
 
     # FountainDecoder
     def __init__(self):
@@ -48,7 +48,9 @@ class FountainDecoder(BasicDecoder):
         self.queued_parts = []
 
     def expected_part_count(self):
-        return len(self.expected_part_indexes)  # TODO: Handle None?
+        if self.expected_part_indexes is not None:
+            return len(self.expected_part_indexes)
+        raise RuntimeError("Decoder not initialized yet")
 
     def estimated_percent_complete(self):
         if self.is_complete():
