@@ -8,12 +8,25 @@
 from ur.xoshiro256 import Xoshiro256
 from ur.cbor_lite import CBOREncoder
 from ur.ur import UR
+from ur.constants import MAX_UINT64
 
-def make_message(length, seed = "Wolf"):
-    rng = Xoshiro256.from_string(seed)
-    return rng.next_data(length)
+def next_int(rng, low, high):
+    return int(rng.next_double() * (high - low + 1) + low) & MAX_UINT64
 
-def make_message_ur(length, seed = "Wolf"):
+def next_byte(rng):
+    return next_int(rng, 0, 255)
+
+def next_data(rng, count):
+    result = bytearray()
+    for _ in range(count):
+        result.append(next_byte(rng))
+    return result
+
+def make_message(length, seed = b"Wolf"):
+    rng = Xoshiro256.from_bytes(seed)
+    return next_data(rng, length)
+
+def make_message_ur(length, seed = b"Wolf"):
     message = make_message(length, seed)
     encoder = CBOREncoder()
     encoder.encodeBytes(message)

@@ -36,7 +36,7 @@ class BytewordsDecoder:
         cls._WORD_ARRAY = array
 
     @classmethod
-    def _decode_word(cls, word: str, word_len: int):
+    def _decode_word(cls, word, word_len):
         if len(word) != word_len:
             raise ValueError("Invalid Bytewords length")
 
@@ -67,7 +67,7 @@ class BytewordsDecoder:
         return value
 
     @classmethod
-    def decode(cls, style: int, text: str):
+    def decode(cls, style, text):
         """
         Decode Bytewords string according to selected style
         """

@@ -11,20 +11,22 @@ from .fountain_decoder import FountainDecoder
 from .bytewords.bytewords_decode import BytewordsDecoder, STYLE_MINIMAL
 from .utils import drop_first, is_ur_type
 
+
 class InvalidScheme(Exception):
     pass
+
 
 class InvalidType(Exception):
     pass
 
+
 class InvalidPathLength(Exception):
     pass
+
 
 class InvalidSequenceComponent(Exception):
     pass
 
-class InvalidFragment(Exception):
-    pass
 
 class URDecoder:
     def __init__(self):
@@ -34,17 +36,17 @@ class URDecoder:
 
     @staticmethod
     def decode(_str):
-        (type, components) = URDecoder.parse(_str)
+        (_type, components) = URDecoder.parse(_str)
         if len(components) == 0:
             raise InvalidPathLength()
 
         body = components[0]
-        return URDecoder.decode_by_type(type, body)
+        return URDecoder.decode_by_type(_type, body)
 
     @staticmethod
-    def decode_by_type(type, body):
+    def decode_by_type(_type, body):
         cbor = BytewordsDecoder.decode(STYLE_MINIMAL, body)
-        return UR(type, cbor)
+        return UR(_type, cbor)
 
     @staticmethod
     def parse(_str):
@@ -52,64 +54,60 @@ class URDecoder:
         lowered = _str.lower()
 
         # Validate URI scheme
-        if not lowered.startswith('ur:'):
+        if not lowered.startswith("ur:"):
             raise InvalidScheme()
-        
+
         path = drop_first(lowered, 3)
 
         # Split the remainder into path components
-        components = path.split('/')
+        components = path.split("/")
 
         # Make sure there are at least two path components
         if len(components) < 2:
             raise InvalidPathLength()
 
         # Validate the type
-        type = components[0]
-        if not is_ur_type(type):
+        _type = components[0]
+        if not is_ur_type(_type):
             raise InvalidType()
 
-        comps = components[1:] # Don't include the ur type
-        return (type, comps)
+        comps = components[1:]  # Don't include the ur type
+        return (_type, comps)
 
     @staticmethod
     def parse_sequence_component(_str):
-        try:
-            comps = _str.split('-')
-            if len(comps) != 2:
-                raise InvalidSequenceComponent()
-            seq_num = int(comps[0])
-            seq_len = int(comps[1])
-            if seq_num < 1 or seq_len < 1:
-                raise InvalidSequenceComponent()
-            return (seq_num, seq_len)
-        except:
+        comps = _str.split("-")
+        if len(comps) != 2:
             raise InvalidSequenceComponent()
+        seq_num = int(comps[0])
+        seq_len = int(comps[1])
+        if seq_num < 1 or seq_len < 1:
+            raise InvalidSequenceComponent()
+        return (seq_num, seq_len)
 
-    def validate_part(self, type):
-        if self.expected_type == None:
-            if not is_ur_type(type):
+    def validate_part(self, _type):
+        if self.expected_type is None:
+            if not is_ur_type(_type):
                 return False
-            self.expected_type = type
+            self.expected_type = _type
             return True
-        else:
-            return type == self.expected_type
+        return _type == self.expected_type
 
     def receive_part(self, _str):
         try:
             # Don't process the part if we're already done
-            if self.result != None:
+            if self.result is not None:
                 return False
 
             # Don't continue if this part doesn't validate
-            (type, components) = URDecoder.parse(_str)
-            if not self.validate_part(type):
+            (_type, components) = URDecoder.parse(_str)
+            if not self.validate_part(_type):
                 return False
 
             # If this is a single-part UR then we're done
             if len(components) == 1:
                 body = components[0]
-                self.result = self.decode_by_type(type, body)
+                self.result = self.decode_by_type(_type, body)
                 return True
 
             # Multi-part URs must have two path components: seq/fragment
@@ -130,16 +128,16 @@ class URDecoder:
                 return False
 
             if self.fountain_decoder.is_success():
-                self.result = UR(type, self.fountain_decoder.result_message())
+                self.result = UR(_type, self.fountain_decoder.result_message())
             elif self.fountain_decoder.is_failure():
                 self.result = self.fountain_decoder.result_error()
 
             return True
-        except Exception as err:
+        except:
             return False
 
-    def expected_type(self):
-        return self.expected_type
+    # def expected_type(self):
+    #     return self.expected_type
 
     def expected_part_count(self):
         return self.fountain_decoder.expected_part_count()
@@ -155,7 +153,7 @@ class URDecoder:
 
     def estimated_percent_complete(self):
         return self.fountain_decoder.estimated_percent_complete()
-        
+
     def is_success(self):
         result = self.result
         return result if not isinstance(result, Exception) else False
@@ -165,7 +163,7 @@ class URDecoder:
         return result if isinstance(result, Exception) else False
 
     def is_complete(self):
-        return self.result != None
+        return self.result is not None
 
     def result_message(self):
         return self.result

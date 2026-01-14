@@ -5,10 +5,14 @@
 # Licensed under the "BSD-2-Clause Plus Patent License"
 #
 
+# VERSION 2.0.0
+
 from .utils import is_ur_type
+
 
 class InvalidType(Exception):
     pass
+
 
 class UR:
     def __init__(self, _type, cbor):

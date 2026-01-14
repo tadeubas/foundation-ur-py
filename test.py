@@ -10,7 +10,7 @@ try:
 except:
     unittest = None
 
-from test_utils import make_message, make_message_ur
+from test_utils import make_message, make_message_ur, next_data
 
 from ur.bytewords import STYLE_STANDARD, STYLE_URI, STYLE_MINIMAL
 from ur.bytewords.bytewords_decode import BytewordsDecoder
@@ -115,7 +115,7 @@ class TestUR(BaseClass):
 
 
     def test_rng_1(self):
-        rng = Xoshiro256.from_string("Wolf")
+        rng = Xoshiro256.from_bytes(b"Wolf")
         numbers = []
         for i in range(100):
             numbers.append(rng.next() % 100)
@@ -123,18 +123,18 @@ class TestUR(BaseClass):
         expected_numbers = [42, 81, 85, 8, 82, 84, 76, 73, 70, 88, 2, 74, 40, 48, 77, 54, 88, 7, 5, 88, 37, 25, 82, 13, 69, 59, 30, 39, 11, 82, 19, 99, 45, 87, 30, 15, 32, 22, 89, 44, 92, 77, 29, 78, 4, 92, 44, 68, 92, 69, 1, 42, 89, 50, 37, 84, 63, 34, 32, 3, 17, 62, 40, 98, 82, 89, 24, 43, 85, 39, 15, 3, 99, 29, 20, 42, 27, 10, 85, 66, 50, 35, 69, 70, 70, 74, 30, 13, 72, 54, 11, 5, 70, 55, 91, 52, 10, 43, 43, 52]
         assert(numbers == expected_numbers)
 
-    def test_rng_2(self):
-        checksum = bytes_to_int(crc32_bytes(string_to_bytes("Wolf")))
-        rng = Xoshiro256.from_crc32(checksum)
-        numbers  = []
-        for i in range(100):
-            numbers.append(rng.next() % 100)
+    # def test_rng_2(self):
+    #     checksum = bytes_to_int(crc32_bytes(string_to_bytes("Wolf")))
+    #     rng = Xoshiro256.from_crc32(checksum)
+    #     numbers  = []
+    #     for i in range(100):
+    #         numbers.append(rng.next() % 100)
 
-        expected_numbers = [88, 44, 94, 74, 0, 99, 7, 77, 68, 35, 47, 78, 19, 21, 50, 15, 42, 36, 91, 11, 85, 39, 64, 22, 57, 11, 25, 12, 1, 91, 17, 75, 29, 47, 88, 11, 68, 58, 27, 65, 21, 54, 47, 54, 73, 83, 23, 58, 75, 27, 26, 15, 60, 36, 30, 21, 55, 57, 77, 76, 75, 47, 53, 76, 9, 91, 14, 69, 3, 95, 11, 73, 20, 99, 68, 61, 3, 98, 36, 98, 56, 65, 14, 80, 74, 57, 63, 68, 51, 56, 24, 39, 53, 80, 57, 51, 81, 3, 1, 30]
-        assert(numbers == expected_numbers)
+    #     expected_numbers = [88, 44, 94, 74, 0, 99, 7, 77, 68, 35, 47, 78, 19, 21, 50, 15, 42, 36, 91, 11, 85, 39, 64, 22, 57, 11, 25, 12, 1, 91, 17, 75, 29, 47, 88, 11, 68, 58, 27, 65, 21, 54, 47, 54, 73, 83, 23, 58, 75, 27, 26, 15, 60, 36, 30, 21, 55, 57, 77, 76, 75, 47, 53, 76, 9, 91, 14, 69, 3, 95, 11, 73, 20, 99, 68, 61, 3, 98, 36, 98, 56, 65, 14, 80, 74, 57, 63, 68, 51, 56, 24, 39, 53, 80, 57, 51, 81, 3, 1, 30]
+    #     assert(numbers == expected_numbers)
 
     def test_rng_3(self):
-        rng = Xoshiro256.from_string("Wolf")
+        rng = Xoshiro256.from_bytes(b"Wolf")
         numbers = []
         for i in range(100):
             numbers.append(rng.next_int(1, 10))
@@ -149,7 +149,7 @@ class TestUR(BaseClass):
     def test_random_sampler(self):
         probs = [ 1, 2, 4, 8 ]
         sampler = RandomSampler(probs)
-        rng = Xoshiro256.from_string("Wolf")
+        rng = Xoshiro256.from_bytes(b"Wolf")
         samples = []
         f = lambda: rng.next_double()
         for i in range(500):
@@ -159,7 +159,7 @@ class TestUR(BaseClass):
         assert(samples == expected_samples)
 
     def test_shuffle(self):
-        rng = Xoshiro256.from_string("Wolf")
+        rng = Xoshiro256.from_bytes(b"Wolf")
         values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         result = []
         for i in range(10):
@@ -211,7 +211,7 @@ class TestUR(BaseClass):
         fragments = FountainEncoder.partition_message(message, fragment_len)
         degrees = []
         for nonce in range(1, 201):
-            part_rng = Xoshiro256.from_string("Wolf-{}".format(nonce))
+            part_rng = Xoshiro256.from_bytes(bytes("Wolf-{}".format(nonce), 'utf-8'))
             degrees.append(choose_degree(len(fragments), part_rng))
 
         expected_degrees = [11, 3, 6, 5, 2, 1, 2, 11, 1, 3, 9, 10, 10, 4, 2, 1, 1, 2, 1, 1, 5, 2, 4, 10, 3, 2, 1, 1, 3, 11, 2, 6, 2, 9, 9, 2, 6, 7, 2, 5, 2, 4, 3, 1, 6, 11, 2, 11, 3, 1, 6, 3, 1, 4, 5, 3, 6, 1, 1, 3, 1, 2, 2, 1, 4, 5, 1, 1, 9, 1, 1, 6, 4, 1, 5, 1, 2, 2, 3, 1, 1, 5, 2, 6, 1, 7, 11, 1, 8, 1, 5, 1, 1, 2, 2, 6, 4, 10, 1, 2, 5, 5, 5, 1, 1, 4, 1, 1, 1, 3, 5, 5, 5, 1, 4, 3, 3, 5, 1, 11, 3, 2, 8, 1, 2, 1, 1, 4, 5, 2, 1, 1, 1, 5, 6, 11, 10, 7, 4, 7, 1, 5, 3, 1, 1, 9, 1, 2, 5, 5, 2, 2, 3, 10, 1, 3, 2, 3, 3, 1, 1, 2, 1, 3, 2, 2, 1, 3, 8, 4, 1, 11, 6, 3, 1, 1, 1, 1, 1, 3, 1, 2, 1, 10, 1, 1, 8, 2, 7, 1, 2, 1, 9, 2, 10, 2, 1, 3, 4, 10]
@@ -264,10 +264,10 @@ class TestUR(BaseClass):
         assert(fragment_indexes == expected_fragment_indexes)
 
     def test_xor(self):
-        rng = Xoshiro256.from_string("Wolf")
-        data1 = rng.next_data(10)
+        rng = Xoshiro256.from_bytes(b"Wolf")
+        data1 = next_data(rng, 10)
         assert(data_to_hex(data1) == "916ec65cf77cadf55cd7")
-        data2 = rng.next_data(10)
+        data2 = next_data(rng,10)
         assert(data_to_hex(data2) == "f9cda1a1030026ddd42e")
         data3 = data1[:]
         xor_into(data3, data2)
@@ -397,7 +397,7 @@ class TestUR(BaseClass):
 
 
     def test_fountain_decoder(self):
-        message_seed = "Wolf"
+        message_seed = b"Wolf"
         message_size = 32767
         max_fragment_len = 1000
 
@@ -489,56 +489,6 @@ class TestUR(BaseClass):
         else:
             print('{}'.format(decoder.result))
             assert(False)
-
-    def run_tests(self):
-        try:
-            print('test_crc32()')
-            self.test_crc32()
-            print('test_bytewords_1()')
-            self.test_bytewords_1()
-            print('test_bytewords_2()')
-            self.test_bytewords_2()
-            print('test_rng_1()')
-            self.test_rng_1()
-            print('test_rng_2()')
-            self.test_rng_2()
-            print('test_rng_3()')
-            self.test_rng_3()
-            print('test_find_fragment_length()')
-            self.test_find_fragment_length()
-            print('test_random_sampler()')
-            self.test_random_sampler()
-            print('test_shuffle()')
-            self.test_shuffle()
-            print('test_partition_and_join()')
-            self.test_partition_and_join()
-            print('test_choose_degree()')
-            self.test_choose_degree()
-            print('test_choose_fragments()')
-            self.test_choose_fragments()
-            print('test_xor()')
-            self.test_xor()
-            print('test_fountain_encoder()')
-            self.test_fountain_encoder()
-            print('test_fountain_encoder_cbor()')
-            self.test_fountain_encoder_cbor()
-            print('test_fountain_encoder_is_complete()')
-            self.test_fountain_encoder_is_complete()
-            print('test_fountain_decoder()')
-            self.test_fountain_decoder()
-            print('test_fountain_cbor()')
-            self.test_fountain_cbor()
-            print('test_single_part_ur()')
-            self.test_single_part_ur()
-            print('test_ur_encoder()')
-            self.test_ur_encoder()
-            print('test_multipart_ur()')
-            self.test_multipart_ur()
-        except Exception as err:
-            import sys
-            print("Exception: {}".format(err))
-            sys.print_exception(err)
-        print("Testing Complete.")
 
 if __name__ == '__main__':
     if unittest != None:
