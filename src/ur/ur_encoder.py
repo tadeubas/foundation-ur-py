@@ -38,14 +38,13 @@ class UREncoder:
         part = self.fountain_encoder.next_part()
         if self.is_single_part():
             return UREncoder.encode(self.ur)
-        else:
-            return UREncoder.encode_part(self.ur.type, part)
+        return UREncoder.encode_part(self.ur.type, part)
 
     @staticmethod
-    def encode_part(type, part):
+    def encode_part(_type, part):
         seq = '{}-{}'.format(part.seq_num, part.seq_len)
         body = BytewordsEncoder.encode(STYLE_MINIMAL, part.cbor())
-        result = UREncoder.encode_ur([type, seq, body])
+        result = UREncoder.encode_ur([_type, seq, body])
         return result
 
     @staticmethod

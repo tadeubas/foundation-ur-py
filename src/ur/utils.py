@@ -6,8 +6,8 @@
 #
 
 
-def data_to_hex(buf):
-    return "".join("{:02x}".format(x) for x in buf)
+# def data_to_hex(buf):
+#     return "".join("{:02x}".format(x) for x in buf)
 
 
 def int_to_bytes(n):
@@ -15,12 +15,12 @@ def int_to_bytes(n):
     return n.to_bytes(4, "big")
 
 
-def bytes_to_int(buf):
-    return int.from_bytes(buf, "big")
+# def bytes_to_int(buf):
+#     return int.from_bytes(buf, "big")
 
 
-def string_to_bytes(s):
-    return bytes(s, "utf8")
+# def string_to_bytes(s):
+#     return bytes(s, "utf8")
 
 
 def is_ur_type(ch):

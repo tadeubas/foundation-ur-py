@@ -15,7 +15,7 @@ from test_utils import make_message, make_message_ur, next_data
 from ur.bytewords import STYLE_STANDARD, STYLE_URI, STYLE_MINIMAL
 from ur.bytewords.bytewords_decode import BytewordsDecoder
 from ur.bytewords.bytewords_encode import BytewordsEncoder
-from ur.utils import data_to_hex, bytes_to_int, string_to_bytes, xor_into
+from ur.utils import xor_into
 from ur.xoshiro256 import Xoshiro256
 from ur.random_sampler import RandomSampler
 from ur.fountain_utils import shuffled, choose_degree, choose_fragments
@@ -24,6 +24,10 @@ from ur.fountain_decoder import FountainDecoder
 from ur.ur_encoder import UREncoder
 from ur.ur_decoder import URDecoder
 from ur.crc32 import crc32
+
+
+def data_to_hex(buf):
+    return "".join("{:02x}".format(x) for x in buf)
 
 def check_crc32(input, expected_hex):
     checksum = crc32(bytes(input, 'utf8'))
@@ -280,8 +284,18 @@ class TestUR(BaseClass):
         message = make_message(256)
         encoder = FountainEncoder(message, 30)
         parts = []
+
+        def description(part):
+            return "seqNum:{}, seqLen:{}, messageLen:{}, checksum:{}, data:{}".format(
+                part.seq_num,
+                part.seq_len,
+                part.message_len,
+                part.checksum,
+                data_to_hex(part.data),
+            )
+
         for i in range(20):
-            parts.append(encoder.next_part().description())
+            parts.append(description(encoder.next_part()))
 
         expected_parts = [
             "seqNum:1, seqLen:9, messageLen:256, checksum:23570951, data:916ec65cf77cadf55cd7f9cda1a1030026ddd42e905b77adc36e4f2d3c",
