@@ -15,8 +15,8 @@ TABLE = None
 def crc32(buf):
     # Lazily instantiate CRC table
     global TABLE
-    if TABLE == None:
-        TABLE = [None] * (256 * 4)
+    if TABLE is None:
+        TABLE = [0] * 256
 
         for i in range(256):
             c = i
@@ -25,12 +25,8 @@ def crc32(buf):
 
             TABLE[i] = c
 
-    crc = MAX_UINT32 & ~0
+    crc = MAX_UINT32 
     for byte in buf:
         crc = (crc >> 8) ^ TABLE[(crc ^ byte) & 0xFF]
 
-    return MAX_UINT32 & ~crc
-
-def crc32n(buf):
-    n = crc32(buf)
-    return n.to_bytes(4, 'big')
+    return crc ^ MAX_UINT32 

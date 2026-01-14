@@ -5,11 +5,7 @@
 # Licensed under the "BSD-2-Clause Plus Patent License"
 #
 
-from .crc32 import crc32, crc32n
-
-def crc32_bytes(buf):
-    checksum = crc32n(buf)
-    return checksum
+from .crc32 import crc32
 
 def crc32_int(buf):
     return crc32(buf)
@@ -35,9 +31,6 @@ def is_ur_type(ch):
     if ch == '-':
         return True
     return False
-
-def partition(s, n):
-    return [s[i:i+n] for i in range(0, len(s), n)]
 
 # Split the given sequence into two parts returned in a tuple
 # The first entry in the tuple has the first `count` values.

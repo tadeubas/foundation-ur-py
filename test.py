@@ -15,7 +15,7 @@ from test_utils import make_message, make_message_ur, next_data
 from ur.bytewords import STYLE_STANDARD, STYLE_URI, STYLE_MINIMAL
 from ur.bytewords.bytewords_decode import BytewordsDecoder
 from ur.bytewords.bytewords_encode import BytewordsEncoder
-from ur.utils import crc32_bytes, crc32_int, data_to_hex, bytes_to_int, string_to_bytes, xor_into
+from ur.utils import crc32_int, data_to_hex, bytes_to_int, string_to_bytes, xor_into
 from ur.xoshiro256 import Xoshiro256
 from ur.random_sampler import RandomSampler
 from ur.fountain_utils import shuffled, choose_degree, choose_fragments
@@ -57,9 +57,9 @@ class TestUR(BaseClass):
         assert(BytewordsEncoder.encode(STYLE_URI, input) == "able-acid-also-lava-zoom-jade-need-echo-taxi")
         assert(BytewordsEncoder.encode(STYLE_MINIMAL, input) == "aeadaolazmjendeoti")
 
-        assert(BytewordsDecoder.decode(STYLE_STANDARD, "able acid also lava zoom jade need echo taxi") == input)
-        assert(BytewordsDecoder.decode(STYLE_URI, "able-acid-also-lava-zoom-jade-need-echo-taxi") == input)
-        assert(BytewordsDecoder.decode(STYLE_MINIMAL, "aeadaolazmjendeoti") == input)
+        assert(BytewordsDecoder.decode(STYLE_STANDARD, "ABLE acid also lava zoom jade need echo taxi") == input)
+        assert(BytewordsDecoder.decode(STYLE_URI, "able-ACID-also-lava-zoom-jade-need-echo-taxi") == input)
+        assert(BytewordsDecoder.decode(STYLE_MINIMAL, "AEadaolazmjendeoTI") == input)
 
         # bad checksum
         self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_STANDARD, "able acid also lava zoom jade need echo wolf"))

@@ -9,7 +9,7 @@ from . import (
     STYLE_MINIMAL,
     BYTEWORDS,
 )
-from ..utils import crc32_bytes
+from ..crc32 import crc32
 
 
 class BytewordsEncoder:
@@ -20,27 +20,42 @@ class BytewordsEncoder:
         return BYTEWORDS[offset : offset + 4]
 
     @classmethod
-    def _get_minimal_word(cls, index):
-        """Get the 2-character minimal Byteword (first + last letter)"""
-        offset = index * 4
-        return BYTEWORDS[offset] + BYTEWORDS[offset + 3]
+    def _encode_words(cls, buf, b_separator):
+        """Join full 4-letter words with the given b_separator"""
+        sep_len = len(b_separator)
+        out = bytearray(len(buf) * (4 + sep_len) - sep_len)
+        pos = 0
 
-    @classmethod
-    def _encode_words(cls, buf, separator):
-        """Join full 4-letter words with the given separator"""
-        words = [cls._get_full_word(byte) for byte in buf]
-        return separator.join(words)
+        for i, byte in enumerate(buf):
+            if i:
+                out[pos : pos + sep_len] = b_separator
+                pos += sep_len
+            word = cls._get_full_word(byte)
+            out[pos : pos + 4] = word
+            pos += 4
+
+        return out.decode()
 
     @classmethod
     def _encode_minimal(cls, buf):
         """Concatenate 2-character minimal words without separator"""
-        return "".join(cls._get_minimal_word(byte) for byte in buf)
+        out = bytearray(len(buf) * 2)
+        pos = 0
+
+        for byte in buf:
+            offset = byte * 4
+            out[pos]     = BYTEWORDS[offset]
+            out[pos + 1] = BYTEWORDS[offset + 3]
+            pos += 2
+
+        return out.decode()
 
     @classmethod
     def _add_checksum(cls, data):
         """Append 4-byte CRC32 checksum"""
-        crc = crc32_bytes(data)
-        return data + crc
+        out = bytearray(data)
+        out.extend(crc32(out).to_bytes(4, "big"))
+        return out
 
     @classmethod
     def encode(cls, style, data):
@@ -52,9 +67,9 @@ class BytewordsEncoder:
         payload_with_crc = cls._add_checksum(data)
 
         if style == STYLE_STANDARD:
-            return cls._encode_words(payload_with_crc, " ")
+            return cls._encode_words(payload_with_crc, b" ")
         if style == STYLE_URI:
-            return cls._encode_words(payload_with_crc, "-")
+            return cls._encode_words(payload_with_crc, b"-")
         if style == STYLE_MINIMAL:
             return cls._encode_minimal(payload_with_crc)
 

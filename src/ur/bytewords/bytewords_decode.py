@@ -9,7 +9,7 @@ from . import (
     STYLE_MINIMAL,
     BYTEWORDS,
 )
-from ..utils import crc32_bytes, partition
+from ..crc32 import crc32
 
 
 class BytewordsDecoder:
@@ -29,38 +29,37 @@ class BytewordsDecoder:
 
         for i in range(256):
             offset = i * 4
-            x = ord(BYTEWORDS[offset]) - ord("a")
-            y = ord(BYTEWORDS[offset + 3]) - ord("a")
+            x = BYTEWORDS[offset] - 97 # ord("a") == 97
+            y = BYTEWORDS[offset + 3] - 97
             array[y * cls._DIM + x] = i
 
         cls._WORD_ARRAY = array
 
     @classmethod
     def _decode_word(cls, word, word_len):
-        if len(word) != word_len:
+        word_b = word.encode()
+        if len(word_b) != word_len:
             raise ValueError("Invalid Bytewords length")
 
         cls._ensure_word_array()
 
-        x = ord(word[0].lower()) - ord("a")
+        x = (word_b[0] | 0x20) - 97
         y_idx = 3 if word_len == 4 else 1
-        y = ord(word[y_idx].lower()) - ord("a")
+        y = (word_b[y_idx] | 0x20) - 97
 
         if not (0 <= x < cls._DIM and 0 <= y < cls._DIM):
             raise ValueError("Invalid Bytewords characters")
 
-        offset = y * cls._DIM + x
-        value = cls._WORD_ARRAY[offset]
+        value = cls._WORD_ARRAY[y * cls._DIM + x]
 
         if value == -1:
             raise ValueError("Unknown Bytewords word")
 
-        # Full word validation (middle characters)
         if word_len == 4:
             expected_offset = value * 4
             if (
-                word[1].lower() != BYTEWORDS[expected_offset + 1]
-                or word[2].lower() != BYTEWORDS[expected_offset + 2]
+                (word_b[1] | 0x20) != BYTEWORDS[expected_offset + 1]
+                or (word_b[2] | 0x20) != BYTEWORDS[expected_offset + 2]
             ):
                 raise ValueError("Bytewords word mismatch")
 
@@ -72,20 +71,25 @@ class BytewordsDecoder:
         Decode Bytewords string according to selected style
         """
         word_len = 4
-        if style == STYLE_STANDARD:
-            words = text.split(" ")
-        elif style == STYLE_URI:
-            words = text.split("-")
+        buf = bytearray()
+        if style in (STYLE_STANDARD,STYLE_URI):
+            sep = " " if style == STYLE_STANDARD else "-"
+            i = 0
+            n = len(text)
+
+            while i < n:
+                j = text.find(sep, i)
+                if j < 0:
+                    j = n
+
+                buf.append(cls._decode_word(text[i:j], word_len))
+                i = j + 1
         elif style == STYLE_MINIMAL:
-            words = partition(text, 2)
             word_len = 2
+            for i in range(0, len(text), word_len):
+                buf.append(cls._decode_word(text[i:i+2], word_len))
         else:
             raise ValueError("Unknown Bytewords style: " + style)
-
-        buf = bytearray()
-
-        for word in words:
-            buf.append(cls._decode_word(word, word_len))
 
         if len(buf) < 5:
             raise ValueError("Bytewords too short")
@@ -93,7 +97,7 @@ class BytewordsDecoder:
         # Checksum validation
         body = buf[:-4]
         checksum_bytes = buf[-4:]
-        computed = crc32_bytes(body)
+        computed = crc32(body).to_bytes(4, "big")
 
         if computed != checksum_bytes:
             raise ValueError("Bytewords checksum mismatch")
