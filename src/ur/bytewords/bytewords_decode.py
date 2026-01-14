@@ -29,7 +29,7 @@ class BytewordsDecoder:
 
         for i in range(256):
             offset = i * 4
-            x = BYTEWORDS[offset] - 97 # ord("a") == 97
+            x = BYTEWORDS[offset] - 97  # ord("a") == 97
             y = BYTEWORDS[offset + 3] - 97
             array[y * cls._DIM + x] = i
 
@@ -57,10 +57,9 @@ class BytewordsDecoder:
 
         if word_len == 4:
             expected_offset = value * 4
-            if (
-                (word_b[1] | 0x20) != BYTEWORDS[expected_offset + 1]
-                or (word_b[2] | 0x20) != BYTEWORDS[expected_offset + 2]
-            ):
+            if (word_b[1] | 0x20) != BYTEWORDS[expected_offset + 1] or (
+                word_b[2] | 0x20
+            ) != BYTEWORDS[expected_offset + 2]:
                 raise ValueError("Bytewords word mismatch")
 
         return value
@@ -72,7 +71,7 @@ class BytewordsDecoder:
         """
         word_len = 4
         buf = bytearray()
-        if style in (STYLE_STANDARD,STYLE_URI):
+        if style in (STYLE_STANDARD, STYLE_URI):
             sep = " " if style == STYLE_STANDARD else "-"
             i = 0
             n = len(text)
@@ -87,7 +86,7 @@ class BytewordsDecoder:
         elif style == STYLE_MINIMAL:
             word_len = 2
             for i in range(0, len(text), word_len):
-                buf.append(cls._decode_word(text[i:i+2], word_len))
+                buf.append(cls._decode_word(text[i : i + 2], word_len))
         else:
             raise ValueError("Unknown Bytewords style: " + style)
 

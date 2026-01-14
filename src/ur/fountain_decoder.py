@@ -9,18 +9,21 @@ from .fountain_utils import choose_fragments, contains, is_strict_subset, set_di
 from .utils import join_bytes, xor_with, take_first
 from .crc32 import crc32
 
+
 class InvalidPart(Exception):
     pass
 
+
 class InvalidChecksum(Exception):
     pass
+
 
 class FountainDecoder:
     class Part:
         def __init__(self, indexes, data):
             self.indexes = frozenset(indexes)
             self.data = data
-        
+
         @classmethod
         def from_encoder_part(cls, p):
             return cls(choose_fragments(p.seq_num, p.seq_len, p.checksum), p.data[:])
@@ -70,7 +73,7 @@ class FountainDecoder:
         return self.result
 
     def result_error(self):
-         return self.result
+        return self.result
 
     def estimated_percent_complete(self):
         if self.is_complete():
@@ -182,7 +185,7 @@ class FountainDecoder:
 
             # Verify the message checksum and note success or failure
             checksum = crc32(message)
-            if(checksum == self.expected_checksum):
+            if checksum == self.expected_checksum:
                 self.result = bytes(message)
             else:
                 self.result = InvalidChecksum()
@@ -245,35 +248,50 @@ class FountainDecoder:
         i = list(indexes)
         i.sort()
         s = [str(j) for j in i]
-        return '[{}]'.format(', '.join(s))
+        return "[{}]".format(", ".join(s))
 
     def result_description(self):
         if self.result == None:
-            return 'None'
+            return "None"
 
         if self.is_success():
-            return '{} bytes'.format(len(self.result))
+            return "{} bytes".format(len(self.result))
         elif self.is_failure():
-            return 'Exception: {}'.format(self.result)
+            return "Exception: {}".format(self.result)
         else:
-            assert(False)
+            assert False
 
     def print_part(self, p):
-        print('part indexes: {}'.format(self.indexes_to_string(p.indexes)))
+        print("part indexes: {}".format(self.indexes_to_string(p.indexes)))
 
     def print_part_end(self):
-        expected = self.expected_part_count() if self.expected_part_indexes != None else 'None'
+        expected = (
+            self.expected_part_count() if self.expected_part_indexes != None else "None"
+        )
         percent = int(round(self.estimated_percent_complete() * 100))
-        print("processed: {}, expected: {}, received: {}, percent: {}%".format(self.processed_parts_count, expected, len(self.received_part_indexes), percent))
+        print(
+            "processed: {}, expected: {}, received: {}, percent: {}%".format(
+                self.processed_parts_count,
+                expected,
+                len(self.received_part_indexes),
+                percent,
+            )
+        )
 
     def print_state(self):
-        parts = self.expected_part_count() if self.expected_part_indexes != None else 'None'
+        parts = (
+            self.expected_part_count() if self.expected_part_indexes != None else "None"
+        )
         received = self.indexes_to_string(self.received_part_indexes)
         mixed = []
         for indexes, p in self.mixed_parts.items():
             mixed.append(self.indexes_to_string(indexes))
-        
-        mixed_s = "[{}]".format(', '.join(mixed))
+
+        mixed_s = "[{}]".format(", ".join(mixed))
         queued = len(self.queued_parts)
         res = self.result_description()
-        print('parts: {}, received: {}, mixed: {}, queued: {}, result: {}'.format(parts, received, mixed_s, queued, res))
+        print(
+            "parts: {}, received: {}, mixed: {}, queued: {}, result: {}".format(
+                parts, received, mixed_s, queued, res
+            )
+        )

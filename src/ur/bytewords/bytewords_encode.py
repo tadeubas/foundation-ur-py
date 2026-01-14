@@ -44,7 +44,7 @@ class BytewordsEncoder:
 
         for byte in buf:
             offset = byte * 4
-            out[pos]     = BYTEWORDS[offset]
+            out[pos] = BYTEWORDS[offset]
             out[pos + 1] = BYTEWORDS[offset + 3]
             pos += 2
 
