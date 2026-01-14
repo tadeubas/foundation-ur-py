@@ -1,5 +1,5 @@
 #
-# crc32.py
+# cbor_lite.py
 #
 # Copyright © 2020 Foundation Devices, Inc.
 # Licensed under the "BSD-2-Clause Plus Patent License"
@@ -11,10 +11,6 @@
 # and others and released under a MIT license. For details, see the
 # COPYRIGHT.md file in the top-level folder of the CBOR-lite software
 # distribution.
-
-
-def bit_length(n):
-    return len(bin(abs(n))) - 2
 
 
 Flag_None = 0
@@ -68,7 +64,8 @@ def get_byte_length(value):
     if value < 24:
         return 0
 
-    return (bit_length(value) + 7) // 8
+    value = len(bin(abs(value))) - 2
+    return (value + 7) // 8
 
 
 class CBOREncoder:

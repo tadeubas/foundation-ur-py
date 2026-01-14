@@ -15,7 +15,7 @@ from test_utils import make_message, make_message_ur, next_data
 from ur.bytewords import STYLE_STANDARD, STYLE_URI, STYLE_MINIMAL
 from ur.bytewords.bytewords_decode import BytewordsDecoder
 from ur.bytewords.bytewords_encode import BytewordsEncoder
-from ur.utils import crc32_int, data_to_hex, bytes_to_int, string_to_bytes, xor_into
+from ur.utils import data_to_hex, bytes_to_int, string_to_bytes, xor_into
 from ur.xoshiro256 import Xoshiro256
 from ur.random_sampler import RandomSampler
 from ur.fountain_utils import shuffled, choose_degree, choose_fragments
@@ -23,9 +23,10 @@ from ur.fountain_encoder import FountainEncoder, Part
 from ur.fountain_decoder import FountainDecoder
 from ur.ur_encoder import UREncoder
 from ur.ur_decoder import URDecoder
+from ur.crc32 import crc32
 
 def check_crc32(input, expected_hex):
-    checksum = crc32_int(bytes(input, 'utf8'))
+    checksum = crc32(bytes(input, 'utf8'))
     hex = '{:x}'.format(checksum)
     return hex == expected_hex
 
@@ -219,7 +220,7 @@ class TestUR(BaseClass):
 
     def test_choose_fragments(self):
         message = make_message(1024)
-        checksum = crc32_int(message)
+        checksum = crc32(message)
         fragment_len = FountainEncoder.find_nominal_fragment_length(len(message), 10, 100)
         fragments = FountainEncoder.partition_message(message, fragment_len)
         fragment_indexes = []

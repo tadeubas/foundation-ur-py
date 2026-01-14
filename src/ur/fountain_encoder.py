@@ -8,8 +8,9 @@
 import math
 from .cbor_lite import CBORDecoder, CBOREncoder
 from .fountain_utils import choose_fragments
-from .utils import split, crc32_int, xor_into, data_to_hex
+from .utils import split, xor_into, data_to_hex
 from .constants import MAX_UINT32, MAX_UINT64
+from .crc32 import crc32
 
 class InvalidHeader(Exception):
     pass
@@ -86,7 +87,7 @@ class FountainEncoder:
     def __init__(self, message, max_fragment_len, first_seq_num = 0, min_fragment_len = 10):
         assert(len(message) <= MAX_UINT32)
         self.message_len = len(message)
-        self.checksum = crc32_int(message)
+        self.checksum = crc32(message)
         self.fragment_len = FountainEncoder.find_nominal_fragment_length(self.message_len, min_fragment_len, max_fragment_len)
         self.fragments = FountainEncoder.partition_message(message, self.fragment_len)
         self.seq_num = first_seq_num

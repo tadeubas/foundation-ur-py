@@ -6,7 +6,8 @@
 #
 
 from .fountain_utils import choose_fragments, contains, is_strict_subset, set_difference
-from .utils import join_bytes, crc32_int, xor_with, take_first
+from .utils import join_bytes, xor_with, take_first
+from .crc32 import crc32
 
 class InvalidPart(Exception):
     pass
@@ -180,7 +181,7 @@ class FountainDecoder:
             message = self.join_fragments(fragments, self.expected_message_len)
 
             # Verify the message checksum and note success or failure
-            checksum = crc32_int(message)
+            checksum = crc32(message)
             if(checksum == self.expected_checksum):
                 self.result = bytes(message)
             else:
