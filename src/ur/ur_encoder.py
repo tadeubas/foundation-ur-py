@@ -6,18 +6,20 @@
 #
 
 from .fountain_encoder import FountainEncoder
-from .bytewords.bytewords_encode import BytewordsEncoder, STYLE_MINIMAL
+from .bytewords import STYLE_MINIMAL
+from .bytewords.bytewords_encode import BytewordsEncoder
 
 
 class UREncoder:
-    # Start encoding a (possibly) multi-part UR.
+    # Start encoding a (possibly) multi-part UR
     def __init__(self, ur, max_fragment_len, first_seq_num=0, min_fragment_len=10):
         self.ur = ur
         self.fountain_encoder = FountainEncoder(
             ur.cbor, max_fragment_len, first_seq_num, min_fragment_len
         )
 
-    # Encode a single-part UR.
+    # STAY
+    # Encode a single-part UR
     @staticmethod
     def encode(ur):
         body = BytewordsEncoder.encode(STYLE_MINIMAL, ur.cbor)
@@ -37,6 +39,7 @@ class UREncoder:
     def is_single_part(self):
         return self.fountain_encoder.is_single_part()
 
+    # STAY
     def next_part(self):
         part = self.fountain_encoder.next_part()
         if self.is_single_part():

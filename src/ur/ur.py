@@ -10,6 +10,7 @@
 from .utils import is_ur_type
 
 
+# STAY
 class UR:
     def __init__(self, _type, cbor):
         if not is_ur_type(_type):
@@ -17,7 +18,7 @@ class UR:
         self.type = _type
         self.cbor = cbor
 
-    def __eq__(self, obj):
-        if obj is None:
-            return False
-        return self.type == obj.type and self.cbor == obj.cbor
+    # def __eq__(self, obj):
+    #     if obj is None:
+    #         return False
+    #     return self.type == obj.type and self.cbor == obj.cbor

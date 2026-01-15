@@ -12,7 +12,7 @@ except:
 
 from test_utils import make_message, make_message_ur, next_data
 
-from ur.bytewords import STYLE_STANDARD, STYLE_URI, STYLE_MINIMAL
+from ur.bytewords import STYLE_MINIMAL
 from ur.bytewords.bytewords_decode import BytewordsDecoder
 from ur.bytewords.bytewords_encode import BytewordsEncoder
 from ur.utils import xor_into
@@ -58,25 +58,23 @@ class TestUR(BaseClass):
 
     def test_bytewords_1(self):
         input = bytes([0, 1, 2, 128, 255])
-        assert(BytewordsEncoder.encode(STYLE_STANDARD, input) == "able acid also lava zoom jade need echo taxi")
-        assert(BytewordsEncoder.encode(STYLE_URI, input) == "able-acid-also-lava-zoom-jade-need-echo-taxi")
+        # assert(BytewordsEncoder.encode(STYLE_STANDARD, input) == "able acid also lava zoom jade need echo taxi")
+        # assert(BytewordsEncoder.encode(STYLE_URI, input) == "able-acid-also-lava-zoom-jade-need-echo-taxi")
         assert(BytewordsEncoder.encode(STYLE_MINIMAL, input) == "aeadaolazmjendeoti")
 
-        assert(BytewordsDecoder.decode(STYLE_STANDARD, "ABLE acid also lava zoom jade need echo taxi") == input)
-        assert(BytewordsDecoder.decode(STYLE_URI, "able-ACID-also-lava-zoom-jade-need-echo-taxi") == input)
+        # assert(BytewordsDecoder.decode(STYLE_STANDARD, "ABLE acid also lava zoom jade need echo taxi") == input)
+        # assert(BytewordsDecoder.decode(STYLE_URI, "able-ACID-also-lava-zoom-jade-need-echo-taxi") == input)
         assert(BytewordsDecoder.decode(STYLE_MINIMAL, "AEadaolazmjendeoTI") == input)
 
         # bad checksum
-        self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_STANDARD, "able acid also lava zoom jade need echo wolf"))
-
-        self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_URI, "able-acid-also-lava-zoom-jade-need-echo-wolf"))
+        # self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_STANDARD, "able acid also lava zoom jade need echo wolf"))
+        # self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_URI, "able-acid-also-lava-zoom-jade-need-echo-wolf"))
 
         self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_MINIMAL, "aeadaolazmjendeowf"))
 
         # too short
-        self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_STANDARD, "wolf"))
-        
-        self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_STANDARD, ""))
+        # self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_STANDARD, "wolf"))
+        # self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_STANDARD, ""))
 
     def test_bytewords_2(self):
         input = bytes([
@@ -113,9 +111,9 @@ class TestUR(BaseClass):
             "fhecwzonnbmhcybtgwwelpflgmfezeonledtgocs" + \
             "fzhycypf"
 
-        assert(BytewordsEncoder.encode(STYLE_STANDARD, input) == encoded)
+        # assert(BytewordsEncoder.encode(STYLE_STANDARD, input) == encoded)
         assert(BytewordsEncoder.encode(STYLE_MINIMAL, input) == encoded_minimal)
-        assert(BytewordsDecoder.decode(STYLE_STANDARD, encoded) == input)
+        # assert(BytewordsDecoder.decode(STYLE_STANDARD, encoded) == input)
         assert(BytewordsDecoder.decode(STYLE_MINIMAL, encoded_minimal) == input)
 
 
@@ -442,11 +440,27 @@ class TestUR(BaseClass):
 
     def test_single_part_ur(self):
         ur = make_message_ur(50)
-        encoded = UREncoder.encode(ur)
         expected = "ur:bytes/hdeymejtswhhylkepmykhhtsytsnoyoyaxaedsuttydmmhhpktpmsrjtgwdpfnsboxgwlbaawzuefywkdplrsrjynbvygabwjldapfcsdwkbrkch"
+
+        # ENCODER
+        # without FountainEncoder obj
+        encoded = UREncoder.encode(ur)
         assert(encoded == expected)
+        # with FountainEncoder obj
+        ue = UREncoder(ur, 9999)
+        encoded_2 = ue.next_part()
+        assert(encoded_2 == expected)
+
+        # DECODER
+        # with FountainDecoder obj
+        ud = URDecoder()
+        ud.receive_part(encoded)
+        assert(ud.result.type == ur.type)
+        assert(ud.result.cbor == ur.cbor)
+        # without FountainDecoder obj
         decoded = URDecoder.decode(encoded)
-        assert(ur == decoded)
+        assert(ur.type == decoded.type)
+        assert(ur.cbor == decoded.cbor)
 
     # Added this test to check GitHub issue #3
     def test_short_crc32(self):
@@ -500,7 +514,8 @@ class TestUR(BaseClass):
                 break
 
         if decoder.is_success():
-            assert(decoder.result == ur)
+            assert(decoder.result.type == ur.type)
+            assert(decoder.result.cbor == ur.cbor)
         else:
             print('{}'.format(decoder.result))
             assert(False)

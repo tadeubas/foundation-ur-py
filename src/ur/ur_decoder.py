@@ -8,7 +8,8 @@
 from .ur import UR
 from .fountain_encoder import Part as FountainEncoderPart
 from .fountain_decoder import FountainDecoder
-from .bytewords.bytewords_decode import BytewordsDecoder, STYLE_MINIMAL
+from .bytewords import STYLE_MINIMAL
+from .bytewords.bytewords_decode import BytewordsDecoder
 from .utils import is_ur_type
 from .basic_decoder import BasicDecoder
 
