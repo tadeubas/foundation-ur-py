@@ -22,6 +22,7 @@ def shuffled(items, rng):
     return result
 
 
+# STAY
 def choose_degree(seq_len, rng):
     degree_probabilities = []
     for i in range(1, seq_len + 1):
@@ -31,6 +32,7 @@ def choose_degree(seq_len, rng):
     return degree_chooser.next(rng.next_double) + 1
 
 
+# STAY
 def choose_fragments(seq_num, seq_len, checksum):
     # The first `seq_len` parts are the "pure" fragments, not mixed with any
     # others. This means that if you only generate the first `seq_len` parts,

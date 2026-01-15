@@ -7,8 +7,13 @@
 
 from ur.xoshiro256 import Xoshiro256
 from ur.cbor_lite import CBOREncoder
-from ur.ur import UR
 from ur.constants import MAX_UINT64
+from ur.ur import UR
+
+def eq_for_tests(self, obj):
+    return self.type == obj.type and self.cbor == obj.cbor
+
+UR.__eq__ = eq_for_tests
 
 def next_int(rng, low, high):
     return int(rng.next_double() * (high - low + 1) + low) & MAX_UINT64

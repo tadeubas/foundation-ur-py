@@ -1,3 +1,4 @@
+# STAY
 class BasicDecoder:
     def __init__(self):
         self.result = None

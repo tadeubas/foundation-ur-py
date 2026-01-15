@@ -73,6 +73,7 @@ class Part:
     #     )
 
 
+# STAY
 class FountainEncoder:
     def __init__(self, message, max_fragment_len, first_seq_num=0, min_fragment_len=10):
         assert isinstance(message, bytearray)
@@ -133,6 +134,7 @@ class FountainEncoder:
     def is_single_part(self):
         return self.seq_len() == 1
 
+    # STAY
     def next_part(self):
         self.seq_num += 1
         self.seq_num = self.seq_num % MAX_UINT32  # wrap at period 2^32

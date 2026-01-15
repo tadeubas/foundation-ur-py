@@ -31,7 +31,10 @@ class RandomSampler:
                 L.append(i)
             i -= 1
 
-        aliases = array("H", [0]) * n
+        if n < 256:
+            aliases = array('B', [0]) * n
+        else:
+            aliases = array('H', [0]) * n
 
         while S and L:
             a = S.pop()

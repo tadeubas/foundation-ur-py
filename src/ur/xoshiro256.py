@@ -87,6 +87,7 @@ class Xoshiro256:
     #     x._set_s(arr)
     #     return x
 
+    # STAY
     @classmethod
     def from_bytes(cls, buf):
         x = cls()

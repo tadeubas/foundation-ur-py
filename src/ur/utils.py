@@ -10,6 +10,7 @@
 #     return "".join("{:02x}".format(x) for x in buf)
 
 
+# STAY
 def int_to_bytes(n):
     # return n.to_bytes((n.bit_length() + 7) // 8, 'big')
     return n.to_bytes(4, "big")
@@ -23,8 +24,9 @@ def int_to_bytes(n):
 #     return bytes(s, "utf8")
 
 
+# STAY
 def is_ur_type(ch):
-    ch = ch.decode() if isinstance(ch, bytes) else ch
+    ch = ch.lower()
     return ("a" <= ch <= "z") or ("0" <= ch <= "9") or (ch == "-")
 
 
