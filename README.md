@@ -2,6 +2,9 @@
 
 **UR Implementation in Python -- ported from the [C++ Reference Implementation by Blockchain Commons](https://github.com/BlockchainCommons/bc-ur)**
 
+## Warning
+**This is a minimal version to reduce the total lib size and optimized for low RAM usage.** `xoshiro256.py` and `cbor_lite.py`for example have lots of lines commented.
+
 ## Introduction
 
 URs ("Uniform Resources") are a method for encoding structured binary data for transport in URIs and QR Codes. They are described in [BCR-2020-005](https://github.com/BlockchainCommons/Research/blob/master/papers/bcr-2020-005-ur.md).

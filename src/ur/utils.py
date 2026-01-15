@@ -25,11 +25,7 @@ def int_to_bytes(n):
 
 def is_ur_type(ch):
     ch = ch.decode() if isinstance(ch, bytes) else ch
-    return (
-        ("a" <= ch <= "z") or
-        ("0" <= ch <= "9") or
-        (ch == "-")
-    )
+    return ("a" <= ch <= "z") or ("0" <= ch <= "9") or (ch == "-")
 
 
 # Split the given sequence into two parts returned in a tuple

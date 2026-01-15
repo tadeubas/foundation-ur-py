@@ -26,10 +26,12 @@ class BytewordsEncoder:
         out = bytearray(len(buf) * (4 + sep_len) - sep_len)
         pos = 0
 
-        for i, byte in enumerate(buf):
-            if i:
+        first = True
+        for byte in buf:
+            if not first:
                 out[pos : pos + sep_len] = b_separator
                 pos += sep_len
+            first = False
             word = cls._get_full_word(byte)
             out[pos : pos + 4] = word
             pos += 4
