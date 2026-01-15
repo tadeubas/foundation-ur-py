@@ -10,15 +10,10 @@
 from .utils import is_ur_type
 
 
-class InvalidType(Exception):
-    pass
-
-
 class UR:
     def __init__(self, _type, cbor):
         if not is_ur_type(_type):
-            raise InvalidType()
-
+            raise ValueError("Invalid UR type")
         self.type = _type
         self.cbor = cbor
 

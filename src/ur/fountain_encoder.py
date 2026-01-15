@@ -8,7 +8,7 @@
 import math
 from .cbor_lite import CBORDecoder, CBOREncoder
 from .fountain_utils import choose_fragments
-from .utils import split, xor_into
+from .utils import xor_into
 from .constants import MAX_UINT32, MAX_UINT64
 from .crc32 import crc32
 
@@ -75,6 +75,7 @@ class Part:
 
 class FountainEncoder:
     def __init__(self, message, max_fragment_len, first_seq_num=0, min_fragment_len=10):
+        assert isinstance(message, bytearray)
         assert len(message) <= MAX_UINT32
         self.message_len = len(message)
         self.checksum = crc32(message)
@@ -102,14 +103,17 @@ class FountainEncoder:
 
     @staticmethod
     def partition_message(message, fragment_len):
-        remaining = message
+        remaining = memoryview(message)
         fragments = []
-        while len(remaining) != 0:
-            (fragment, remaining) = split(remaining, fragment_len)
-            padding = fragment_len - len(fragment)
-            while padding > 0:
-                fragment.append(0)
-                padding -= 1
+
+        while len(remaining):
+            frag_view = remaining[:fragment_len]
+            remaining = remaining[fragment_len:]
+
+            # Create owned fragment buffer
+            fragment = bytearray(fragment_len)
+            fragment[: len(frag_view)] = frag_view
+
             fragments.append(fragment)
 
         return fragments

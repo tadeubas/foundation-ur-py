@@ -24,45 +24,52 @@ def int_to_bytes(n):
 
 
 def is_ur_type(ch):
-    if "a" <= ch <= "z":
-        return True
-    if "0" <= ch <= "9":
-        return True
-    if ch == "-":
-        return True
-    return False
+    ch = ch.decode() if isinstance(ch, bytes) else ch
+    return (
+        ("a" <= ch <= "z") or
+        ("0" <= ch <= "9") or
+        (ch == "-")
+    )
 
 
 # Split the given sequence into two parts returned in a tuple
 # The first entry in the tuple has the first `count` values.
 # The second entry in the tuple has the remaining values.
-def split(buf, count):
-    return (buf[0:count], buf[count:])
+# def split(buf, count):
+#     mv = memoryview(buf)
+#     return mv[:count], mv[count:]
 
 
-def join_bytes(list_of_ba):
-    out = bytearray()
-    for ba in list_of_ba:
-        out.extend(ba)
+def join_bytes(chunks):
+    total = 0
+    for c in chunks:
+        total += len(c)
+
+    out = bytearray(total)
+    pos = 0
+    for c in chunks:
+        l = len(c)
+        out[pos : pos + l] = c
+        pos += l
+
     return out
 
 
 def xor_into(target, source):
     count = len(target)
-    assert count == len(source)  # Must be the same length
+    assert count == len(source)
     for i in range(count):
         target[i] ^= source[i]
 
 
-def xor_with(a, b):
-    target = a
+def xor_with(target, b):
     xor_into(target, b)
     return target
 
 
 def take_first(s, count):
-    return s[0:count]
+    return s[:count]
 
 
-def drop_first(s, count):
-    return s[count:]
+# def drop_first(s, count):
+#     return s[count:]

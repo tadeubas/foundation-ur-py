@@ -9,7 +9,7 @@ from .ur import UR
 from .fountain_encoder import Part as FountainEncoderPart
 from .fountain_decoder import FountainDecoder
 from .bytewords.bytewords_decode import BytewordsDecoder, STYLE_MINIMAL
-from .utils import drop_first, is_ur_type
+from .utils import is_ur_type
 from .basic_decoder import BasicDecoder
 
 
@@ -58,7 +58,7 @@ class URDecoder(BasicDecoder):
         if not lowered.startswith("ur:"):
             raise InvalidScheme()
 
-        path = drop_first(lowered, 3)
+        path = lowered[3:]
 
         # Split the remainder into path components
         components = path.split("/")

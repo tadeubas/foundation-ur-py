@@ -42,6 +42,9 @@ def rotl(x, k):
 
 
 class Xoshiro256:
+
+    _INV_M = 1.0 / (float(MAX_UINT64) + 1.0)
+
     def __init__(self, arr=None):
         self.s = [0] * 4
         if arr is not None:
@@ -50,43 +53,56 @@ class Xoshiro256:
             self.s[2] = arr[2]
             self.s[3] = arr[3]
 
-    def _set_s(self, arr):
-        for i in range(4):
-            o = i * 8
-            v = 0
-            for n in range(8):
-                v <<= 8
-                v |= arr[o + n]
-            self.s[i] = v
+    # def _set_s(self, arr):
+    #     for i in range(4):
+    #         o = i * 8
+    #         v = 0
+    #         for n in range(8):
+    #             v <<= 8
+    #             v |= arr[o + n]
+    #         self.s[i] = v
 
     def _hash_then_set_s(self, buf):
         m = hashlib.sha256()
         m.update(buf)
-        digest = m.digest()
-        self._set_s(digest)
+        d = m.digest()
+
+        s = self.s
+        for i in range(4):
+            o = i * 8
+            s[i] = (
+                (d[o] << 56)
+                | (d[o + 1] << 48)
+                | (d[o + 2] << 40)
+                | (d[o + 3] << 32)
+                | (d[o + 4] << 24)
+                | (d[o + 5] << 16)
+                | (d[o + 6] << 8)
+                | d[o + 7]
+            )
 
     # @classmethod
     # def from_int8_array(cls, arr):
-    #     x = Xoshiro256()
+    #     x = cls()
     #     x._set_s(arr)
     #     return x
 
     @classmethod
     def from_bytes(cls, buf):
-        x = Xoshiro256()
+        x = cls()
         x._hash_then_set_s(buf)
         return x
 
     # @classmethod
     # def from_crc32(cls, crc32):
-    #     x = Xoshiro256()
+    #     x = cls()
     #     buf = int_to_bytes(crc32)
     #     x._hash_then_set_s(buf)
     #     return x
 
     # @classmethod
     # def from_string(cls, s):
-    #     x = Xoshiro256()
+    #     x = cls()
     #     buf = string_to_bytes(s)
     #     x._hash_then_set_s(buf)
     #     return x
@@ -107,9 +123,7 @@ class Xoshiro256:
         return result
 
     def next_double(self):
-        m = float(MAX_UINT64) + 1
-        nxt = self.next()
-        return nxt / m
+        return self.next() * Xoshiro256._INV_M
 
     def next_int(self, low, high):
         return int(self.next_double() * (high - low + 1) + low) & MAX_UINT64

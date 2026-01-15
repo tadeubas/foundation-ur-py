@@ -21,7 +21,7 @@ class UREncoder:
     @staticmethod
     def encode(ur):
         body = BytewordsEncoder.encode(STYLE_MINIMAL, ur.cbor)
-        return UREncoder.encode_ur([ur.type, body])
+        return UREncoder.encode_ur((ur.type, body))
 
     def last_part_indexes(self):
         return self.fountain_encoder.last_part_indexes()
@@ -45,9 +45,9 @@ class UREncoder:
 
     @staticmethod
     def encode_part(_type, part):
-        seq = "{}-{}".format(part.seq_num, part.seq_len)
+        seq = str(part.seq_num) + "-" + str(part.seq_len)
         body = BytewordsEncoder.encode(STYLE_MINIMAL, part.cbor())
-        result = UREncoder.encode_ur([_type, seq, body])
+        result = UREncoder.encode_ur((_type, seq, body))
         return result
 
     @staticmethod
