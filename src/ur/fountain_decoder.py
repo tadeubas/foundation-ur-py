@@ -5,7 +5,10 @@
 # Licensed under the "BSD-2-Clause Plus Patent License"
 #
 
-from .fountain_utils import choose_fragments, contains, is_strict_subset, set_difference
+from .fountain_utils import (
+    choose_fragments,
+    reset_degree_cache,
+)
 from .utils import join_bytes, xor_with, take_first
 from .crc32 import crc32
 from .basic_decoder import BasicDecoder
@@ -13,6 +16,18 @@ from .basic_decoder import BasicDecoder
 
 class InvalidChecksum(Exception):
     pass
+
+
+def contains(set_or_list, el):
+    return el in set_or_list
+
+
+def is_strict_subset(a, b):
+    return a.issubset(b)
+
+
+def set_difference(a, b):
+    return a.difference(b)
 
 
 class FountainDecoder(BasicDecoder):
@@ -46,6 +61,12 @@ class FountainDecoder(BasicDecoder):
         self.simple_parts = {}
         self.mixed_parts = {}
         self.queued_parts = []
+
+    def is_complete(self):
+        if self.result is not None:
+            reset_degree_cache()  # reset the cache for receive_part -> FountainDecoder.Part.from_encoder_part -> choose_fragments -> choose_degree
+            return True
+        return False
 
     def expected_part_count(self):
         if self.expected_part_indexes is not None:

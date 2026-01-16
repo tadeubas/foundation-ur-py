@@ -7,7 +7,7 @@
 
 import math
 from .cbor_lite import CBORDecoder, CBOREncoder
-from .fountain_utils import choose_fragments
+from .fountain_utils import choose_fragments, reset_degree_cache
 from .utils import xor_into
 from .constants import MAX_UINT32, MAX_UINT64
 from .crc32 import crc32
@@ -128,7 +128,10 @@ class FountainEncoder:
     # This becomes `true` when the minimum number of parts
     # to relay the complete message have been generated
     def is_complete(self):
-        return self.seq_num >= self.seq_len()
+        if self.seq_num >= self.seq_len():
+            reset_degree_cache()  # reset the cache for next_part -> choose_fragments -> choose_degree
+            return True
+        return False
 
     # True if only a single part will be generated.
     def is_single_part(self):

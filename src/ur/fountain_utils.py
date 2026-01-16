@@ -5,59 +5,108 @@
 # Licensed under the "BSD-2-Clause Plus Patent License"
 #
 
-from .random_sampler import RandomSampler
+from array import array
 from .utils import int_to_bytes
 from .xoshiro256 import Xoshiro256
 
 
-# Fisher-Yates shuffle
-def shuffled(items, rng):
-    remaining = items
-    result = []
-    while len(remaining) > 0:
-        index = rng.next_int(0, len(remaining) - 1)
-        item = remaining.pop(index)
-        result.append(item)
+# STAY
+class _DegreeSamplerCache:
+    """Cache for choose_fragments -> choose_degree depended on seq_len"""
 
-    return result
+    class RandomSampler:
+        def __init__(self, probs, aliases):
+            self.probs = probs
+            self.aliases = aliases
+
+        def next(self, rng_func):
+            r1 = rng_func()
+            r2 = rng_func()
+            i = int(r1 * len(self.probs))
+            return i if r2 < self.probs[i] else self.aliases[i]
+
+    def __init__(self):
+        self.seq_len = None
+        self.sampler = None
+
+    def get(self, seq_len):
+        if self.seq_len != seq_len:
+            self.seq_len = seq_len
+            self.sampler = self._build(seq_len)
+        return self.sampler
+
+    def _build(self, seq_len):
+        # harmonic distribution, no temp list
+        total = 0.0
+        for i in range(1, seq_len + 1):
+            total += 1.0 / i
+
+        P = array("f", [0]) * seq_len
+        for i in range(seq_len):
+            P[i] = (1.0 / (i + 1)) * seq_len / total
+
+        # alias table (unchanged)
+        S = []
+        L = []
+        for i in range(seq_len - 1, -1, -1):
+            if P[i] < 1.0:
+                S.append(i)
+            else:
+                L.append(i)
+
+        if seq_len < 256:
+            aliases = array("B", [0]) * seq_len
+        else:
+            aliases = array("H", [0]) * seq_len
+
+        while S and L:
+            a = S.pop()
+            g = L.pop()
+            aliases[a] = g
+            P[g] += P[a] - 1.0
+            if P[g] < 1.0:
+                S.append(g)
+            else:
+                L.append(g)
+
+        while L:
+            P[L.pop()] = 1
+        while S:
+            P[S.pop()] = 1
+
+        sampler = _DegreeSamplerCache.RandomSampler(P, aliases)
+        return sampler
+
+
+_degree_cache = _DegreeSamplerCache()
 
 
 # STAY
 def choose_degree(seq_len, rng):
-    degree_probabilities = []
-    for i in range(1, seq_len + 1):
-        degree_probabilities.append(1.0 / i)
+    sampler = _degree_cache.get(seq_len)
+    return sampler.next(rng.next_double) + 1
 
-    degree_chooser = RandomSampler(degree_probabilities)
-    return degree_chooser.next(rng.next_double) + 1
+
+# STAY
+def reset_degree_cache():
+    _degree_cache.seq_len = None
+    _degree_cache.sampler = None
 
 
 # STAY
 def choose_fragments(seq_num, seq_len, checksum):
-    # The first `seq_len` parts are the "pure" fragments, not mixed with any
-    # others. This means that if you only generate the first `seq_len` parts,
-    # then you have all the parts you need to decode the message.
     if seq_num <= seq_len:
         return set([seq_num - 1])
 
     seed = int_to_bytes(seq_num) + int_to_bytes(checksum)
     rng = Xoshiro256.from_bytes(seed)
     degree = choose_degree(seq_len, rng)
-    indexes = []
 
-    for i in range(seq_len):
-        indexes.append(i)
-    shuffled_indexes = shuffled(indexes, rng)
-    return set(shuffled_indexes[0:degree])
+    remaining = list(range(seq_len))
+    result = set()
 
+    for _ in range(degree):
+        j = rng.next_int(0, len(remaining) - 1)
+        result.add(remaining.pop(j))
 
-def contains(set_or_list, el):
-    return el in set_or_list
-
-
-def is_strict_subset(a, b):
-    return a.issubset(b)
-
-
-def set_difference(a, b):
-    return a.difference(b)
+    return result
