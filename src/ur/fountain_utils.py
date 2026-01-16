@@ -41,7 +41,7 @@ class _DegreeSamplerCache:
         for i in range(1, seq_len + 1):
             total += 1.0 / i
 
-        P = array("f", [0]) * seq_len
+        P = array("f", [0] * seq_len)
         for i in range(seq_len):
             P[i] = (1.0 / (i + 1)) * seq_len / total
 
@@ -55,9 +55,9 @@ class _DegreeSamplerCache:
                 L.append(i)
 
         if seq_len < 256:
-            aliases = array("B", [0]) * seq_len
+            aliases = array("B", [0] * seq_len)
         else:
-            aliases = array("H", [0]) * seq_len
+            aliases = array("H", [0] * seq_len)
 
         while S and L:
             a = S.pop()
