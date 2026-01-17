@@ -38,20 +38,22 @@ class BytewordsEncoder:
 
     #     return out.decode()
 
+    # STAY
     @classmethod
     def _encode_minimal(cls, buf):
         """Concatenate 2-character minimal words without separator"""
-        out = bytearray(len(buf) * 2)
+        out = bytearray(len(buf) << 1)  # * 2
         pos = 0
 
         for byte in buf:
-            offset = byte * 4
+            offset = byte << 2  # * 4
             out[pos] = BYTEWORDS[offset]
             out[pos + 1] = BYTEWORDS[offset + 3]
             pos += 2
 
         return out.decode()
 
+    # STAY
     @classmethod
     def _add_checksum(cls, data):
         """Append 4-byte CRC32 checksum"""
@@ -59,6 +61,7 @@ class BytewordsEncoder:
         out.extend(crc32(out).to_bytes(4, "big"))
         return out
 
+    # STAY
     @classmethod
     def encode(cls, _style, data):
         """

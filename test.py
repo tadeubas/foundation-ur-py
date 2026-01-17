@@ -33,6 +33,16 @@ def check_crc32(input, expected_hex):
     hex = '{:x}'.format(checksum)
     return hex == expected_hex
 
+def get_fragments(message, fragment_len):
+    fragments = []
+    msg_len = len(message)
+    for i in range(0, msg_len, fragment_len):
+        frag = bytearray(fragment_len)
+        end = min(i + fragment_len, msg_len)
+        frag[: end - i] = message[i:end]
+        fragments.append(frag)
+    return fragments
+
 if unittest == None:
     BaseClass = object
 else:
@@ -164,7 +174,8 @@ class TestUR(BaseClass):
     def test_partition_and_join(self):
         message = make_message(1024)
         fragment_len = FountainEncoder.find_nominal_fragment_length(len(message), 10, 100)
-        fragments = FountainEncoder.partition_message(message, fragment_len)
+        
+        fragments = get_fragments(message, fragment_len)
         fragments_hex = []
         for f in fragments:
             fragments_hex.append(data_to_hex(f))
@@ -190,7 +201,7 @@ class TestUR(BaseClass):
     def test_choose_degree(self):
         message = make_message(1024)
         fragment_len = FountainEncoder.find_nominal_fragment_length(len(message), 10, 100)
-        fragments = FountainEncoder.partition_message(message, fragment_len)
+        fragments = get_fragments(message, fragment_len)
         degrees = []
         for nonce in range(1, 201):
             part_rng = Xoshiro256.from_bytes(bytes("Wolf-{}".format(nonce), 'utf-8'))
@@ -203,7 +214,7 @@ class TestUR(BaseClass):
         message = make_message(1024)
         checksum = crc32(message)
         fragment_len = FountainEncoder.find_nominal_fragment_length(len(message), 10, 100)
-        fragments = FountainEncoder.partition_message(message, fragment_len)
+        fragments = get_fragments(message, fragment_len)
         fragment_indexes = []
         for seq_num in range(1, 31):
             indexes_set = choose_fragments(seq_num, len(fragments), checksum)
@@ -256,6 +267,12 @@ class TestUR(BaseClass):
         assert(data_to_hex(data3) == "68a367fdf47c8b2888f9")
         xor_into(data3, data1)
         assert(data3 == data2)
+        # diff length test
+        t = bytearray(5)
+        s = b'\x01\x02\x03'
+        xor_into(t, s)
+        assert(t == b'\x01\x02\x03\x00\x00')
+
 
     def test_fountain_encoder(self):
         message = make_message(256)
@@ -405,9 +422,9 @@ class TestUR(BaseClass):
                 break
 
         if decoder.is_success():
-            assert(decoder.result_message() == message)
+            assert(decoder.result == message)
         else:
-            print(decoder.result_error())
+            print(decoder.result)
             assert(False)
 
     def test_fountain_cbor(self):

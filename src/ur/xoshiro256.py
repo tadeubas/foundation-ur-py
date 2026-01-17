@@ -62,6 +62,7 @@ class Xoshiro256:
     #             v |= arr[o + n]
     #         self.s[i] = v
 
+    # STAY
     def _hash_then_set_s(self, buf):
         m = hashlib.sha256()
         m.update(buf)
@@ -69,7 +70,7 @@ class Xoshiro256:
 
         s = self.s
         for i in range(4):
-            o = i * 8
+            o = i << 3  # * 8
             s[i] = (
                 (d[o] << 56)
                 | (d[o + 1] << 48)
@@ -108,6 +109,7 @@ class Xoshiro256:
     #     x._hash_then_set_s(buf)
     #     return x
 
+    # STAY
     def next(self):
         result = (rotl((self.s[1] * 5) & MAX_UINT64, 7) * 9) & MAX_UINT64
         t = (self.s[1] << 17) & MAX_UINT64
@@ -123,9 +125,11 @@ class Xoshiro256:
 
         return result
 
+    # STAY
     def next_double(self):
         return self.next() * Xoshiro256._INV_M
 
+    # STAY
     def next_int(self, low, high):
         return int(self.next_double() * (high - low + 1) + low) & MAX_UINT64
 

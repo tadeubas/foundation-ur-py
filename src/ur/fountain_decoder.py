@@ -9,7 +9,7 @@ from .fountain_utils import (
     choose_fragments,
     reset_degree_cache,
 )
-from .utils import join_bytes, xor_with, take_first
+from .utils import join_bytes, xor_into, take_first
 from .crc32 import crc32
 from .basic_decoder import BasicDecoder
 
@@ -18,20 +18,11 @@ class InvalidChecksum(Exception):
     pass
 
 
-def contains(set_or_list, el):
-    return el in set_or_list
-
-
-def is_strict_subset(a, b):
-    return a.issubset(b)
-
-
-def set_difference(a, b):
-    return a.difference(b)
-
-
+# STAY
 class FountainDecoder(BasicDecoder):
     class Part:
+        __slots__ = ("indexes", "data", "_index")
+
         def __init__(self, indexes, data):
             self.indexes = frozenset(indexes)
             self.data = data
@@ -52,7 +43,7 @@ class FountainDecoder(BasicDecoder):
     def __init__(self):
         super().__init__()
         self.received_part_indexes = set()
-        self.last_part_indexes = None
+        # self.last_part_indexes = None
         self.processed_parts_count = 0
         self.expected_part_indexes = None
         self.expected_fragment_len = None
@@ -61,18 +52,30 @@ class FountainDecoder(BasicDecoder):
         self.simple_parts = {}
         self.mixed_parts = {}
         self.queued_parts = []
+        self.queue_index = 0
 
+    def _clear_caches(self):
+        self.simple_parts.clear()
+        self.mixed_parts.clear()
+        self.queued_parts.clear()
+        self.received_part_indexes.clear()
+        self.expected_part_indexes = None
+
+    # STAY
     def is_complete(self):
         if self.result is not None:
+            # Decode / Encoder operations don't usually happen in parallel, otherwise reset_degree_cache() will need to be removed from here
             reset_degree_cache()  # reset the cache for receive_part -> FountainDecoder.Part.from_encoder_part -> choose_fragments -> choose_degree
             return True
         return False
 
+    # STAY
     def expected_part_count(self):
         if self.expected_part_indexes is not None:
             return len(self.expected_part_indexes)
         raise RuntimeError("Decoder not initialized yet")
 
+    # STAY
     def estimated_percent_complete(self):
         if self.is_complete():
             return 1
@@ -81,6 +84,7 @@ class FountainDecoder(BasicDecoder):
         estimated_input_parts = self.expected_part_count() * 1.75
         return min(0.99, self.processed_parts_count / estimated_input_parts)
 
+    # STAY
     def receive_part(self, encoder_part):
         # Don't process the part if we're already done
         if self.is_complete():
@@ -92,11 +96,11 @@ class FountainDecoder(BasicDecoder):
 
         # Add this part to the queue
         p = FountainDecoder.Part.from_encoder_part(encoder_part)
-        self.last_part_indexes = p.indexes
-        self.enqueue(p)
+        # self.last_part_indexes = p.indexes
+        self.queued_parts.append(p)
 
         # Process the queue until we're done or the queue is empty
-        while not self.is_complete() and len(self.queued_parts) != 0:
+        while not self.is_complete() and self.queue_index < len(self.queued_parts):
             self.process_queue_item()
 
         # Keep track of how many parts we've processed
@@ -106,60 +110,59 @@ class FountainDecoder(BasicDecoder):
 
         return True
 
+    # STAY
     # Join all the fragments of a message together, throwing away any padding
     @staticmethod
     def join_fragments(fragments, message_len):
         message = join_bytes(fragments)
         return take_first(message, message_len)
 
-    def enqueue(self, p):
-        self.queued_parts.append(p)
-
+    # STAY
     def process_queue_item(self):
-        part = self.queued_parts.pop(0)
-        # self.print_part(part)
+        part = self.queued_parts[self.queue_index]
+        self.queue_index += 1
 
         if part.is_simple():
             self.process_simple_part(part)
         else:
             self.process_mixed_part(part)
-        # self.print_state()
 
+            # Aggressive queue compaction for RAM (Ideally, it would be 16)
+            if self.queue_index > 8 and self.queue_index == len(self.queued_parts):
+                self.queued_parts.clear()
+                self.queue_index = 0
+
+    # STAY
     def reduce_mixed_by(self, p):
-        # Reduce all the current mixed parts by the given part
-        reduced_parts = []
-        for value in self.mixed_parts.values():
-            reduced_parts.append(self.reduced_part_by_part(value, p))
-
-        # Collect all the remaining mixed parts
         new_mixed = {}
-        for reduced_part in reduced_parts:
-            # If this reduced part is now simple
-            if reduced_part.is_simple():
-                # Add it to the queue
-                self.enqueue(reduced_part)
+        for value in self.mixed_parts.values():
+            reduced = self.reduced_part_by_part(value, p)
+            if reduced.is_simple():
+                self.queued_parts.append(reduced)
             else:
-                # Otherwise, add it to the dict of current mixed parts
-                new_mixed[reduced_part.indexes] = reduced_part
-
+                new_mixed[reduced.indexes] = reduced
         self.mixed_parts = new_mixed
 
+    # STAY
     def reduced_part_by_part(self, a, b):
         # If the fragments mixed into `b` are a strict (proper) subset of those in `a`...
-        if is_strict_subset(b.indexes, a.indexes):
-            # The new fragments in the revised part are `a` - `b`.
-            new_indexes = set_difference(a.indexes, b.indexes)
+        if b.indexes.issubset(a.indexes) and b.indexes != a.indexes:
+            # The new fragments in the revised part are `a` - `b`
+            new_indexes = a.indexes.difference(b.indexes)
             # The new data in the revised part are `a` XOR `b`
-            new_data = xor_with(bytearray(a.data), b.data)
+            new_data = bytearray(a.data)
+            xor_into(new_data, b.data)
+
             return self.Part(new_indexes, new_data)
 
         # `a` is not reducable by `b`, so return a
         return a
 
+    # STAY
     def process_simple_part(self, p):
         # Don't process duplicate parts
         fragment_index = p.index()
-        if contains(self.received_part_indexes, fragment_index):
+        if fragment_index in self.received_part_indexes:
             return
 
         # Record this part
@@ -169,15 +172,9 @@ class FountainDecoder(BasicDecoder):
         # If we've received all the parts
         if self.received_part_indexes == self.expected_part_indexes:
             # Reassemble the message from its fragments
-            sorted_parts = []
-            for value in self.simple_parts.values():
-                sorted_parts.append(value)
-
-            sorted_parts.sort(key=lambda a: a.index())
-
-            fragments = []
-            for part in sorted_parts:
-                fragments.append(part.data)
+            fragments = [None] * self.expected_part_count()
+            for part in self.simple_parts.values():
+                fragments[part.index()] = part.data
 
             message = self.join_fragments(fragments, self.expected_message_len)
 
@@ -188,10 +185,13 @@ class FountainDecoder(BasicDecoder):
             else:
                 self.result = InvalidChecksum()
 
+            self._clear_caches()
+
         else:
             # Reduce all the mixed parts by this part
             self.reduce_mixed_by(p)
 
+    # STAY
     def process_mixed_part(self, p):
         # Don't process duplicate parts
         for r in self.mixed_parts.values():
@@ -209,36 +209,30 @@ class FountainDecoder(BasicDecoder):
         # If the part is now simple
         if reduced.is_simple():
             # Add it to the queue
-            self.enqueue(reduced)
+            self.queued_parts.append(reduced)
         else:
             # Reduce all the mixed parts by this one
             self.reduce_mixed_by(reduced)
             # Record this new mixed part
             self.mixed_parts[reduced.indexes] = reduced
 
+    # STAY
     def validate_part(self, p):
         # If this is the first part we've seen
         if self.expected_part_indexes is None:
-            # Record the things that all the other parts we see will have to match to be valid.
-            self.expected_part_indexes = set()
-            for i in range(p.seq_len):
-                self.expected_part_indexes.add(i)
-
+            self.expected_part_indexes = set(range(p.seq_len))
             self.expected_message_len = p.message_len
             self.expected_checksum = p.checksum
             self.expected_fragment_len = len(p.data)
         else:
-            # If this part's values don't match the first part's values, throw away the part
-            if self.expected_part_count() != p.seq_len:
-                return False
-            if self.expected_message_len != p.message_len:
-                return False
-            if self.expected_checksum != p.checksum:
-                return False
-            if self.expected_fragment_len != len(p.data):
+            if (
+                self.expected_part_count() != p.seq_len
+                or self.expected_message_len != p.message_len
+                or self.expected_checksum != p.checksum
+                or self.expected_fragment_len != len(p.data)
+            ):
                 return False
 
-        # This part should be processed
         return True
 
     # debugging

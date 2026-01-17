@@ -14,6 +14,7 @@ from .xoshiro256 import Xoshiro256
 class _DegreeSamplerCache:
     """Cache for choose_fragments -> choose_degree depended on seq_len"""
 
+    # STAY
     class RandomSampler:
         def __init__(self, probs, aliases):
             self.probs = probs
@@ -29,25 +30,29 @@ class _DegreeSamplerCache:
         self.seq_len = None
         self.sampler = None
 
+    # STAY
     def get(self, seq_len):
         if self.seq_len != seq_len:
             self.seq_len = seq_len
             self.sampler = self._build(seq_len)
         return self.sampler
 
+    # STAY
     def _build(self, seq_len):
-        # harmonic distribution, no temp list
+        # Pre-calculate total for harmonic distribution
         total = 0.0
         for i in range(1, seq_len + 1):
             total += 1.0 / i
 
-        P = array("f", [0] * seq_len)
+        # Calculate probabilities directly into array
+        P = array("f")
+        inv_total = seq_len / total
         for i in range(seq_len):
-            P[i] = (1.0 / (i + 1)) * seq_len / total
+            P.append((1.0 / (i + 1)) * inv_total)
 
-        # alias table (unchanged)
-        S = []
-        L = []
+        # Use bytearray for small temp storage
+        S = []  # Small indices
+        L = []  # Large indices
         for i in range(seq_len - 1, -1, -1):
             if P[i] < 1.0:
                 S.append(i)
@@ -70,9 +75,9 @@ class _DegreeSamplerCache:
                 L.append(g)
 
         while L:
-            P[L.pop()] = 1
+            P[L.pop()] = 1.0
         while S:
-            P[S.pop()] = 1
+            P[S.pop()] = 1.0
 
         sampler = _DegreeSamplerCache.RandomSampler(P, aliases)
         return sampler
@@ -89,6 +94,10 @@ def choose_degree(seq_len, rng):
 
 # STAY
 def reset_degree_cache():
+    sampler = _degree_cache.sampler
+    if sampler:
+        sampler.probs = None
+        sampler.aliases = None
     _degree_cache.seq_len = None
     _degree_cache.sampler = None
 
@@ -96,17 +105,23 @@ def reset_degree_cache():
 # STAY
 def choose_fragments(seq_num, seq_len, checksum):
     if seq_num <= seq_len:
-        return set([seq_num - 1])
+        return frozenset([seq_num - 1])
 
     seed = int_to_bytes(seq_num) + int_to_bytes(checksum)
     rng = Xoshiro256.from_bytes(seed)
     degree = choose_degree(seq_len, rng)
 
-    remaining = list(range(seq_len))
+    # Choose smallest array type based on seq_len
+    if seq_len < 256:
+        remaining = array("B", range(seq_len))
+    elif seq_len < 65536:
+        remaining = array("H", range(seq_len))
+    else:
+        remaining = array("I", range(seq_len))
     result = set()
 
     for _ in range(degree):
         j = rng.next_int(0, len(remaining) - 1)
         result.add(remaining.pop(j))
 
-    return result
+    return frozenset(result)

@@ -10,6 +10,7 @@ from .bytewords import STYLE_MINIMAL
 from .bytewords.bytewords_encode import BytewordsEncoder
 
 
+# STAY
 class UREncoder:
     # Start encoding a (possibly) multi-part UR
     def __init__(self, ur, max_fragment_len, first_seq_num=0, min_fragment_len=10):
@@ -23,17 +24,18 @@ class UREncoder:
     @staticmethod
     def encode(ur):
         body = BytewordsEncoder.encode(STYLE_MINIMAL, ur.cbor)
-        return UREncoder.encode_ur((ur.type, body))
+        return UREncoder.encode_ur(ur.type, body)
 
-    def last_part_indexes(self):
-        return self.fountain_encoder.last_part_indexes()
+    # def last_part_indexes(self):
+    #     return self.fountain_encoder.last_part_indexes()
 
     # `True` if the minimal number of parts to transmit the message have been
     # generated. Parts generated when this is `true` will be fountain codes
     # containing various mixes of the part data.
-    def is_complete(self):
-        return self.fountain_encoder.is_complete()
+    # def is_complete(self):
+    #     return self.fountain_encoder.is_complete()
 
+    # STAY
     # `True` if this UR can be contained in a single part. If `True`, repeated
     # calls to `next_part()` will all return the same single-part UR.
     def is_single_part(self):
@@ -46,18 +48,21 @@ class UREncoder:
             return UREncoder.encode(self.ur)
         return UREncoder.encode_part(self.ur.type, part)
 
+    # STAY
     @staticmethod
     def encode_part(_type, part):
-        seq = str(part.seq_num) + "-" + str(part.seq_len)
+        seq = "{}-{}".format(part.seq_num, part.seq_len)
         body = BytewordsEncoder.encode(STYLE_MINIMAL, part.cbor())
-        result = UREncoder.encode_ur((_type, seq, body))
+        result = UREncoder.encode_ur(_type, seq, body)
         return result
 
+    # STAY
     @staticmethod
     def encode_uri(scheme, path_components):
         path = "/".join(path_components)
-        return ":".join([scheme, path])
+        return scheme + ":" + path
 
+    # STAY
     @staticmethod
-    def encode_ur(path_components):
+    def encode_ur(*path_components):
         return UREncoder.encode_uri("ur", path_components)

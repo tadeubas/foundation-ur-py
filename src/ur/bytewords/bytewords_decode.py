@@ -3,6 +3,7 @@
 # Licensed under the "BSD-2-Clause Plus Patent License"
 #
 
+from array import array
 from . import (
     # STYLE_STANDARD,
     # STYLE_URI,
@@ -16,6 +17,7 @@ class BytewordsDecoder:
     _WORD_ARRAY = None
     _DIM = 26
 
+    # STAY
     @classmethod
     def _ensure_word_array(cls):
         """Lazily initialize the fast lookup table.
@@ -25,27 +27,29 @@ class BytewordsDecoder:
         if cls._WORD_ARRAY is not None:
             return
 
-        array = [-1] * (cls._DIM * cls._DIM)
+        w_array = array("h", [-1] * (cls._DIM * cls._DIM))
 
         for i in range(256):
-            offset = i * 4
+            offset = i << 2  # * 4
             x = BYTEWORDS[offset] - 97  # ord("a") == 97
             y = BYTEWORDS[offset + 3] - 97
-            array[y * cls._DIM + x] = i
+            w_array[y * cls._DIM + x] = i
 
-        cls._WORD_ARRAY = array
+        cls._WORD_ARRAY = w_array
 
+    # STAY
     @classmethod
-    def _decode_word(cls, word, word_len):
-        word_b = word.encode()
-        if len(word_b) != word_len:
-            raise ValueError("Invalid Bytewords length")
+    def _decode_word(cls, buf, pos, word_len):
+        # if len(word_b) != word_len:
+        #     raise ValueError("Invalid Bytewords length")
 
         cls._ensure_word_array()
 
-        x = (word_b[0] | 0x20) - 97
-        y_idx = 3 if word_len == 4 else 1
-        y = (word_b[y_idx] | 0x20) - 97
+        b0 = buf[pos] | 0x20
+        x = b0 - 97
+        y_idx = pos + (3 if word_len == 4 else 1)
+        b1 = buf[y_idx] | 0x20
+        y = b1 - 97
 
         if not (0 <= x < cls._DIM and 0 <= y < cls._DIM):
             raise ValueError("Invalid Bytewords characters")
@@ -56,19 +60,22 @@ class BytewordsDecoder:
             raise ValueError("Unknown Bytewords word")
 
         if word_len == 4:
-            expected_offset = value * 4
-            if (word_b[1] | 0x20) != BYTEWORDS[expected_offset + 1] or (
-                word_b[2] | 0x20
+            expected_offset = value << 2  # * 4
+            if (buf[pos + 1] | 0x20) != BYTEWORDS[expected_offset + 1] or (
+                buf[pos + 2] | 0x20
             ) != BYTEWORDS[expected_offset + 2]:
                 raise ValueError("Bytewords word mismatch")
 
         return value
 
+    # STAY
     @classmethod
     def decode(cls, _style, text):
         """
         Decode Bytewords string according to selected style
         """
+        if isinstance(text, str):
+            text = text.encode()
         word_len = 4
         buf = bytearray()
         # if _style in (STYLE_STANDARD, STYLE_URI):
@@ -86,7 +93,7 @@ class BytewordsDecoder:
         # elif _style == STYLE_MINIMAL:
         word_len = 2
         for i in range(0, len(text), word_len):
-            buf.append(cls._decode_word(text[i : i + 2], word_len))
+            buf.append(cls._decode_word(text, i, word_len))
         # else:
         #     raise ValueError("Unknown Bytewords style: " + style)
 
