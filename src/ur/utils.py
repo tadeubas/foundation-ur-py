@@ -25,9 +25,18 @@ def int_to_bytes(n):
 
 
 # STAY
-def is_ur_type(ch):
-    ch = ch.lower()
-    return ("a" <= ch <= "z") or ("0" <= ch <= "9") or (ch == "-")
+def is_ur_type(_type):
+    for c in _type:
+        o = ord(c) if isinstance(c, str) else c
+        # 'A'–'Z'
+        if 65 <= o <= 90:
+            o += 32
+        return (
+            (97 <= o <= 122) or  # a–z
+            (48 <= o <= 57) or   # 0–9
+            (o == 45)            # '-'
+        )
+
 
 
 # Split the given sequence into two parts returned in a tuple
@@ -38,6 +47,7 @@ def is_ur_type(ch):
 #     return mv[:count], mv[count:]
 
 
+# STAY
 def join_bytes(chunks):
     total = 0
     for c in chunks:
@@ -53,6 +63,7 @@ def join_bytes(chunks):
     return out
 
 
+# STAY
 def xor_into(target, source):
     count = len(target)
     assert count == len(source)
@@ -60,11 +71,13 @@ def xor_into(target, source):
         target[i] ^= source[i]
 
 
+# STAY
 def xor_with(target, b):
     xor_into(target, b)
     return target
 
 
+# STAY
 def take_first(s, count):
     return s[:count]
 
