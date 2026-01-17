@@ -405,9 +405,9 @@ class TestUR(BaseClass):
                 break
 
         if decoder.is_success():
-            assert(decoder.result_message() == message)
+            assert(decoder.result == message)
         else:
-            print(decoder.result_error())
+            print(decoder.result)
             assert(False)
 
     def test_fountain_cbor(self):

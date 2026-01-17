@@ -7,5 +7,6 @@
 import binascii
 
 
+# STAY
 def crc32(buf):
     return binascii.crc32(buf) & 0xFFFFFFFF

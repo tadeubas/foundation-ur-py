@@ -30,6 +30,7 @@ def set_difference(a, b):
     return a.difference(b)
 
 
+# STAY
 class FountainDecoder(BasicDecoder):
     class Part:
         def __init__(self, indexes, data):
@@ -52,7 +53,7 @@ class FountainDecoder(BasicDecoder):
     def __init__(self):
         super().__init__()
         self.received_part_indexes = set()
-        self.last_part_indexes = None
+        # self.last_part_indexes = None
         self.processed_parts_count = 0
         self.expected_part_indexes = None
         self.expected_fragment_len = None
@@ -62,17 +63,21 @@ class FountainDecoder(BasicDecoder):
         self.mixed_parts = {}
         self.queued_parts = []
 
+    # STAY
     def is_complete(self):
         if self.result is not None:
+            # Decode / Encoder operations don't usually happen in parallel, otherwise reset_degree_cache() will need to be removed from here
             reset_degree_cache()  # reset the cache for receive_part -> FountainDecoder.Part.from_encoder_part -> choose_fragments -> choose_degree
             return True
         return False
 
+    # STAY
     def expected_part_count(self):
         if self.expected_part_indexes is not None:
             return len(self.expected_part_indexes)
         raise RuntimeError("Decoder not initialized yet")
 
+    # STAY
     def estimated_percent_complete(self):
         if self.is_complete():
             return 1
@@ -81,6 +86,7 @@ class FountainDecoder(BasicDecoder):
         estimated_input_parts = self.expected_part_count() * 1.75
         return min(0.99, self.processed_parts_count / estimated_input_parts)
 
+    # STAY
     def receive_part(self, encoder_part):
         # Don't process the part if we're already done
         if self.is_complete():
@@ -92,7 +98,7 @@ class FountainDecoder(BasicDecoder):
 
         # Add this part to the queue
         p = FountainDecoder.Part.from_encoder_part(encoder_part)
-        self.last_part_indexes = p.indexes
+        # self.last_part_indexes = p.indexes
         self.enqueue(p)
 
         # Process the queue until we're done or the queue is empty
@@ -106,15 +112,18 @@ class FountainDecoder(BasicDecoder):
 
         return True
 
+    # STAY
     # Join all the fragments of a message together, throwing away any padding
     @staticmethod
     def join_fragments(fragments, message_len):
         message = join_bytes(fragments)
         return take_first(message, message_len)
 
+    # STAY
     def enqueue(self, p):
         self.queued_parts.append(p)
 
+    # STAY
     def process_queue_item(self):
         part = self.queued_parts.pop(0)
         # self.print_part(part)
@@ -125,6 +134,7 @@ class FountainDecoder(BasicDecoder):
             self.process_mixed_part(part)
         # self.print_state()
 
+    # STAY
     def reduce_mixed_by(self, p):
         # Reduce all the current mixed parts by the given part
         reduced_parts = []
@@ -144,6 +154,7 @@ class FountainDecoder(BasicDecoder):
 
         self.mixed_parts = new_mixed
 
+    # STAY
     def reduced_part_by_part(self, a, b):
         # If the fragments mixed into `b` are a strict (proper) subset of those in `a`...
         if is_strict_subset(b.indexes, a.indexes):
@@ -156,6 +167,7 @@ class FountainDecoder(BasicDecoder):
         # `a` is not reducable by `b`, so return a
         return a
 
+    # STAY
     def process_simple_part(self, p):
         # Don't process duplicate parts
         fragment_index = p.index()
@@ -192,6 +204,7 @@ class FountainDecoder(BasicDecoder):
             # Reduce all the mixed parts by this part
             self.reduce_mixed_by(p)
 
+    # STAY
     def process_mixed_part(self, p):
         # Don't process duplicate parts
         for r in self.mixed_parts.values():
@@ -216,6 +229,7 @@ class FountainDecoder(BasicDecoder):
             # Record this new mixed part
             self.mixed_parts[reduced.indexes] = reduced
 
+    # STAY
     def validate_part(self, p):
         # If this is the first part we've seen
         if self.expected_part_indexes is None:

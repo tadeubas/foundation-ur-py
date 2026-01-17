@@ -13,10 +13,7 @@ from .constants import MAX_UINT32, MAX_UINT64
 from .crc32 import crc32
 
 
-class InvalidHeader(Exception):
-    pass
-
-
+# STAY
 class Part:
 
     def __init__(self, seq_num, seq_len, message_len, checksum, data):
@@ -26,33 +23,35 @@ class Part:
         self.checksum = checksum
         self.data = data
 
+    # STAY
     @staticmethod
     def from_cbor(cbor_buf):
         decoder = CBORDecoder(cbor_buf)
         (array_size, _) = decoder.decodeArraySize()
         if array_size != 5:
-            raise InvalidHeader()
+            raise ValueError("Invalid header")
 
         (seq_num, _) = decoder.decodeUnsigned()
         if seq_num > MAX_UINT64:
-            raise InvalidHeader()
+            raise ValueError("Invalid header")
 
         (seq_len, _) = decoder.decodeUnsigned()
         if seq_len > MAX_UINT64:
-            raise InvalidHeader()
+            raise ValueError("Invalid header")
 
         (message_len, _) = decoder.decodeUnsigned()
         if message_len > MAX_UINT64:
-            raise InvalidHeader()
+            raise ValueError("Invalid header")
 
         (checksum, _) = decoder.decodeUnsigned()
         if checksum > MAX_UINT64:
-            raise InvalidHeader()
+            raise ValueError("Invalid header")
 
         (data, _) = decoder.decodeBytes()
 
         return Part(seq_num, seq_len, message_len, checksum, data)
 
+    # STAY???
     def cbor(self):
         encoder = CBOREncoder()
         encoder.encodeArraySize(5)
@@ -86,6 +85,7 @@ class FountainEncoder:
         self.fragments = FountainEncoder.partition_message(message, self.fragment_len)
         self.seq_num = first_seq_num
 
+    # STAY
     @staticmethod
     def find_nominal_fragment_length(message_len, min_fragment_len, max_fragment_len):
         assert message_len > 0
@@ -102,6 +102,7 @@ class FountainEncoder:
         assert fragment_len is not None
         return fragment_len
 
+    # STAY
     @staticmethod
     def partition_message(message, fragment_len):
         remaining = memoryview(message)
@@ -119,9 +120,10 @@ class FountainEncoder:
 
         return fragments
 
-    def last_part_indexes(self):
-        return self.last_part_indexes
+    # def last_part_indexes(self):
+    #     return self.last_part_indexes
 
+    # STAY
     def seq_len(self):
         return len(self.fragments)
 
@@ -129,10 +131,12 @@ class FountainEncoder:
     # to relay the complete message have been generated
     def is_complete(self):
         if self.seq_num >= self.seq_len():
+            # Decode / Encoder operations don't usually happen in parallel, otherwise reset_degree_cache() will need to be removed from here
             reset_degree_cache()  # reset the cache for next_part -> choose_fragments -> choose_degree
             return True
         return False
 
+    # STAY
     # True if only a single part will be generated.
     def is_single_part(self):
         return self.seq_len() == 1
@@ -146,6 +150,7 @@ class FountainEncoder:
         data = bytes(mixed)
         return Part(self.seq_num, self.seq_len(), self.message_len, self.checksum, data)
 
+    # STAY
     def mix(self, indexes):
         result = [0] * self.fragment_len
         for index in indexes:

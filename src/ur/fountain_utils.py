@@ -14,6 +14,7 @@ from .xoshiro256 import Xoshiro256
 class _DegreeSamplerCache:
     """Cache for choose_fragments -> choose_degree depended on seq_len"""
 
+    # STAY
     class RandomSampler:
         def __init__(self, probs, aliases):
             self.probs = probs
@@ -29,12 +30,14 @@ class _DegreeSamplerCache:
         self.seq_len = None
         self.sampler = None
 
+    # STAY
     def get(self, seq_len):
         if self.seq_len != seq_len:
             self.seq_len = seq_len
             self.sampler = self._build(seq_len)
         return self.sampler
 
+    # STAY
     def _build(self, seq_len):
         # harmonic distribution, no temp list
         total = 0.0
