@@ -12,6 +12,9 @@ from . import (
 )
 from ..crc32 import crc32
 
+ORD_A = 65  # 'A'. Was 97 = 'a'
+CASE_MASK = ~0x20  # 0xDF = uppercase_mask. Was | 0x20 = lowercase mask
+
 
 class BytewordsDecoder:
     _WORD_ARRAY = None
@@ -31,8 +34,8 @@ class BytewordsDecoder:
 
         for i in range(256):
             offset = i << 2  # * 4
-            x = BYTEWORDS[offset] - 97  # ord("a") == 97
-            y = BYTEWORDS[offset + 3] - 97
+            x = BYTEWORDS[offset] - ORD_A  # ord("a") == ORD_A
+            y = BYTEWORDS[offset + 3] - ORD_A
             w_array[y * cls._DIM + x] = i
 
         cls._WORD_ARRAY = w_array
@@ -45,11 +48,11 @@ class BytewordsDecoder:
 
         cls._ensure_word_array()
 
-        b0 = buf[pos] | 0x20
-        x = b0 - 97
+        b0 = buf[pos] & CASE_MASK  # = uppercase. Was | 0x20 = lowercase
+        x = b0 - ORD_A
         y_idx = pos + (3 if word_len == 4 else 1)
-        b1 = buf[y_idx] | 0x20
-        y = b1 - 97
+        b1 = buf[y_idx] & CASE_MASK
+        y = b1 - ORD_A
 
         if not (0 <= x < cls._DIM and 0 <= y < cls._DIM):
             raise ValueError("Invalid Bytewords characters")
@@ -61,8 +64,8 @@ class BytewordsDecoder:
 
         if word_len == 4:
             expected_offset = value << 2  # * 4
-            if (buf[pos + 1] | 0x20) != BYTEWORDS[expected_offset + 1] or (
-                buf[pos + 2] | 0x20
+            if (buf[pos + 1] & CASE_MASK) != BYTEWORDS[expected_offset + 1] or (
+                buf[pos + 2] & CASE_MASK
             ) != BYTEWORDS[expected_offset + 2]:
                 raise ValueError("Bytewords word mismatch")
 

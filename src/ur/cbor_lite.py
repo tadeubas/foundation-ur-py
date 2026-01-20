@@ -63,12 +63,20 @@ _SHIFTS_8 = (56, 48, 40, 32, 24, 16, 8, 0)
 _SHIFTS_4 = (24, 16, 8, 0)
 _SHIFTS_2 = (8, 0)
 
+BYTE_MASK = 0xFF
+
 
 # STAY
 def get_byte_length(value):
     if value < 24:
         return 0
-    return (value.bit_length() + 7) >> 3
+    if value <= 0xFF:
+        return 1
+    if value <= 0xFFFF:
+        return 2
+    if value <= 0xFFFFFFFF:
+        return 4
+    return 8
 
 
 class CBOREncoder:
@@ -91,43 +99,31 @@ class CBOREncoder:
         # 5-8 bytes required, use 8 bytes
         if 5 <= length <= 8:
             self.encodeTagAndAdditional(tag, Tag_Minor_length8)
-            self.buf.extend(
-                (
-                    (value >> 56) & 0xFF,
-                    (value >> 48) & 0xFF,
-                    (value >> 40) & 0xFF,
-                    (value >> 32) & 0xFF,
-                    (value >> 24) & 0xFF,
-                    (value >> 16) & 0xFF,
-                    (value >> 8) & 0xFF,
-                    value & 0xFF,
-                )
-            )
+            self.buf.append((value >> 56) & BYTE_MASK)
+            self.buf.append((value >> 48) & BYTE_MASK)
+            self.buf.append((value >> 40) & BYTE_MASK)
+            self.buf.append((value >> 32) & BYTE_MASK)
+            self.buf.append((value >> 24) & BYTE_MASK)
+            self.buf.append((value >> 16) & BYTE_MASK)
+            self.buf.append((value >> 8) & BYTE_MASK)
+            self.buf.append(value & BYTE_MASK)
 
         # 3-4 bytes required, use 4 bytes
         elif length in (3, 4):
             self.encodeTagAndAdditional(tag, Tag_Minor_length4)
-            self.buf.extend(
-                (
-                    (value >> 24) & 0xFF,
-                    (value >> 16) & 0xFF,
-                    (value >> 8) & 0xFF,
-                    value & 0xFF,
-                )
-            )
+            self.buf.append((value >> 24) & BYTE_MASK)
+            self.buf.append((value >> 16) & BYTE_MASK)
+            self.buf.append((value >> 8) & BYTE_MASK)
+            self.buf.append(value & BYTE_MASK)
 
         elif length == 2:
             self.encodeTagAndAdditional(tag, Tag_Minor_length2)
-            self.buf.extend(
-                (
-                    (value >> 8) & 0xFF,
-                    value & 0xFF,
-                )
-            )
+            self.buf.append((value >> 8) & BYTE_MASK)
+            self.buf.append(value & BYTE_MASK)
 
         elif length == 1:
             self.encodeTagAndAdditional(tag, Tag_Minor_length1)
-            self.buf.append(value & 0xFF)
+            self.buf.append(value & BYTE_MASK)
 
         elif length == 0:
             self.encodeTagAndAdditional(tag, value)

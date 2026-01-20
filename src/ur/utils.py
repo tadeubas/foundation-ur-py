@@ -26,13 +26,12 @@ def int_to_bytes(n):
 
 # STAY
 def is_ur_type(_type):
+    if isinstance(_type, str):
+        _type = _type.encode()
     for o in _type:
-        if isinstance(o, str):
-            o = ord(o)
-        # if upper 'A'–'Z', get lower
-        if 65 <= o <= 90:
-            o += 32
-        return (97 <= o <= 122) or (48 <= o <= 57) or (o == 45)  # a–z  # 0–9  # '-'
+        return (
+            (97 <= o <= 122) or (65 <= o <= 90) or (48 <= o <= 57) or (o == 45)
+        )  # a–z  # A–Z  # 0–9  # '-'
 
 
 # Split the given sequence into two parts returned in a tuple

@@ -69,7 +69,7 @@ class TestUR(BaseClass):
         input = bytes([0, 1, 2, 128, 255])
         # assert(BytewordsEncoder.encode(STYLE_STANDARD, input) == "able acid also lava zoom jade need echo taxi")
         # assert(BytewordsEncoder.encode(STYLE_URI, input) == "able-acid-also-lava-zoom-jade-need-echo-taxi")
-        assert(BytewordsEncoder.encode(STYLE_MINIMAL, input) == "aeadaolazmjendeoti")
+        assert(BytewordsEncoder.encode(STYLE_MINIMAL, input) == "AEADAOLAZMJENDEOTI")
 
         # assert(BytewordsDecoder.decode(STYLE_STANDARD, "ABLE acid also lava zoom jade need echo taxi") == input)
         # assert(BytewordsDecoder.decode(STYLE_URI, "able-ACID-also-lava-zoom-jade-need-echo-taxi") == input)
@@ -79,7 +79,7 @@ class TestUR(BaseClass):
         # self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_STANDARD, "able acid also lava zoom jade need echo wolf"))
         # self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_URI, "able-acid-also-lava-zoom-jade-need-echo-wolf"))
 
-        self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_MINIMAL, "aeadaolazmjendeowf"))
+        self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_MINIMAL, "AEADAOLAZMJENDEOWF"))
 
         # too short
         # self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_STANDARD, "wolf"))
@@ -121,7 +121,7 @@ class TestUR(BaseClass):
             "fzhycypf"
 
         # assert(BytewordsEncoder.encode(STYLE_STANDARD, input) == encoded)
-        assert(BytewordsEncoder.encode(STYLE_MINIMAL, input) == encoded_minimal)
+        assert(BytewordsEncoder.encode(STYLE_MINIMAL, input) == encoded_minimal.upper())
         # assert(BytewordsDecoder.decode(STYLE_STANDARD, encoded) == input)
         assert(BytewordsDecoder.decode(STYLE_MINIMAL, encoded_minimal) == input)
 
@@ -437,6 +437,7 @@ class TestUR(BaseClass):
     def test_single_part_ur(self):
         ur = make_message_ur(50)
         expected = "ur:bytes/hdeymejtswhhylkepmykhhtsytsnoyoyaxaedsuttydmmhhpktpmsrjtgwdpfnsboxgwlbaawzuefywkdplrsrjynbvygabwjldapfcsdwkbrkch"
+        expected = expected.upper()
 
         # ENCODER
         # without FountainEncoder obj
@@ -497,6 +498,7 @@ class TestUR(BaseClass):
             "ur:bytes/19-9/lpbwascfadaxcywenbpljkhdcadekicpaajootjzpsdrbalpeywllbdsnbinaerkurspbncxgslgftvtsrjtksplcpeo",
             "ur:bytes/20-9/lpbbascfadaxcywenbpljkhdcayapmrleeleaxpasfrtrdkncffwjyjzgyetdmlewtkpktgllepfrltataztksmhkbot"
         ]
+        expected_parts = [s.upper() for s in expected_parts]
         assert(parts == expected_parts)
 
     def test_multipart_ur(self):
@@ -518,7 +520,97 @@ class TestUR(BaseClass):
             print('{}'.format(decoder.result))
             assert(False)
 
-    def test_ur_lib(self):
+    def test_cbor_encode_decode_single(self):
+        from ur.cbor_lite import CBOREncoder, CBORDecoder
+
+        data = make_message(1234, seed=b'Krux')
+
+        # Encode CBOR
+        cbor_enc = CBOREncoder()
+        cbor_enc.encodeBytes(data)
+        encoded = cbor_enc.get_bytes()
+        # print("CBOREncoder")
+        # print(encoded)
+
+        # Decode CBOR
+        cbor_dec = CBORDecoder(encoded)
+        decoded, _ = cbor_dec.decodeBytes()
+        decoded = decoded.tobytes()
+
+        # print("\nCBORDecoder")
+        # print(decoded)
+
+        assert(data == decoded)
+
+    def test_ur_encode_decode_single(self):
+        from ur.cbor_lite import CBOREncoder
+        from ur.ur_decoder import URDecoder
+        from ur.ur_encoder import UREncoder
+        from ur.ur import UR
+
+        data = make_message(4321, seed=b'Krux')
+
+        # Encode CBOR
+        cbor_enc = CBOREncoder()
+        cbor_enc.encodeBytes(data)
+        encoded = cbor_enc.get_bytes()
+        # print("CBOREncoder")
+        # print(encoded)
+
+        ur_obj = UR("bytes", encoded)
+        # print("\nUR:", ur_obj.type, ur_obj.cbor)
+
+        # single-UR
+        ur_encoded_data = UREncoder.encode(ur_obj)
+        # print("\nUREncoder")
+        # print(ur_encoded_data)
+
+        decoded_ur_obj = URDecoder.decode(ur_encoded_data)
+        # print("\nURDecoder")
+        # print(decoded_ur_obj.type, decoded_ur_obj.cbor)
+
+        assert(ur_obj.type == decoded_ur_obj.type)
+        assert(ur_obj.cbor == decoded_ur_obj.cbor)
+
+    def test_ur_encode_decode_multiple(self):
+        from ur.cbor_lite import CBOREncoder
+        from ur.ur_decoder import URDecoder
+        from ur.ur_encoder import UREncoder
+        from ur.ur import UR
+
+        data = make_message(4321, seed=b'Krux')
+
+        # Encode CBOR
+        cbor_enc = CBOREncoder()
+        cbor_enc.encodeBytes(data)
+        encoded = cbor_enc.get_bytes()
+        # print("CBOREncoder")
+        # print(encoded)
+
+        ur_obj = UR("bytes", encoded)
+        # print("\nUR:", ur_obj.type, ur_obj.cbor)
+
+        encoder = UREncoder(ur_obj, 100, 0)
+        decoder = URDecoder()
+        i = 0
+        while True:
+            part = encoder.next_part()
+            # each 3 parts misses 1
+            if i % 3 != 0:
+                decoder.receive_part(part)
+                # print(decoder.fountain_decoder.received_part_indexes, decoder.fountain_decoder.processed_parts_count, decoder.fountain_decoder.expected_part_indexes, decoder.expected_part_count())
+                if(decoder.is_complete()):
+                    break
+            i+=1
+
+        print("\nMultipart (fountain) encoder/decoder")
+        print(decoder.result.type, decoder.result.cbor)
+
+        assert ur_obj.type == decoder.result.type
+        assert ur_obj.cbor == decoder.result.cbor
+
+
+    def test_ur_encode_decode_multipart_crypto_psbt(self):
         from test_utils import UR
 
         _max = 100

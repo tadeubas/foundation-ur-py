@@ -65,4 +65,4 @@ class UREncoder:
     # STAY
     @staticmethod
     def encode_ur(*path_components):
-        return UREncoder.encode_uri("ur", path_components)
+        return UREncoder.encode_uri("UR", path_components)

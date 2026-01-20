@@ -13,6 +13,7 @@ from .utils import is_ur_type
 # STAY
 class UR:
     def __init__(self, _type, cbor):
+        _type = _type.upper()
         if not is_ur_type(_type):
             raise ValueError("Invalid UR type")
         self.type = _type

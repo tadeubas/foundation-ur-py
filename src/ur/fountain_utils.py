@@ -122,6 +122,14 @@ def choose_fragments(seq_num, seq_len, checksum):
 
     for _ in range(degree):
         j = rng.next_int(0, len(remaining) - 1)
-        result.add(remaining.pop(j))
+
+        v = remaining[j]
+        result.add(v)
+
+        # emulate array.pop(j)
+        for k in range(j, len(remaining) - 1):
+            remaining[k] = remaining[k + 1]
+
+        remaining = remaining[:-1]
 
     return frozenset(result)
