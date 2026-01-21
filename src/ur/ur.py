@@ -10,7 +10,6 @@
 from .utils import is_ur_type
 
 
-# STAY
 class UR:
     def __init__(self, _type, cbor):
         _type = _type.upper()
@@ -18,8 +17,3 @@ class UR:
             raise ValueError("Invalid UR type")
         self.type = _type
         self.cbor = cbor
-
-    # def __eq__(self, obj):
-    #     if obj is None:
-    #         return False
-    #     return self.type == obj.type and self.cbor == obj.cbor

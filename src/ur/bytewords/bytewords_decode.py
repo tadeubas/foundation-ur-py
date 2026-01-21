@@ -5,9 +5,6 @@
 
 from array import array
 from . import (
-    # STYLE_STANDARD,
-    # STYLE_URI,
-    # STYLE_MINIMAL,
     BYTEWORDS,
 )
 from ..crc32 import crc32
@@ -20,7 +17,6 @@ class BytewordsDecoder:
     _WORD_ARRAY = None
     _DIM = 26
 
-    # STAY
     @classmethod
     def _ensure_word_array(cls):
         """Lazily initialize the fast lookup table.
@@ -40,11 +36,8 @@ class BytewordsDecoder:
 
         cls._WORD_ARRAY = w_array
 
-    # STAY
     @classmethod
     def _decode_word(cls, buf, pos, word_len):
-        # if len(word_b) != word_len:
-        #     raise ValueError("Invalid Bytewords length")
 
         cls._ensure_word_array()
 
@@ -71,9 +64,8 @@ class BytewordsDecoder:
 
         return value
 
-    # STAY
     @classmethod
-    def decode(cls, _style, text):
+    def decode(cls, text):
         """
         Decode Bytewords string according to selected style
         """
@@ -81,24 +73,9 @@ class BytewordsDecoder:
             text = text.encode()
         word_len = 4
         buf = bytearray()
-        # if _style in (STYLE_STANDARD, STYLE_URI):
-        #     sep = " " if style == STYLE_STANDARD else "-"
-        #     i = 0
-        #     n = len(text)
-
-        #     while i < n:
-        #         j = text.find(sep, i)
-        #         if j < 0:
-        #             j = n
-
-        #         buf.append(cls._decode_word(text[i:j], word_len))
-        #         i = j + 1
-        # elif _style == STYLE_MINIMAL:
         word_len = 2
         for i in range(0, len(text), word_len):
             buf.append(cls._decode_word(text, i, word_len))
-        # else:
-        #     raise ValueError("Unknown Bytewords style: " + style)
 
         if len(buf) < 5:
             raise ValueError("Bytewords too short")

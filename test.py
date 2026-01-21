@@ -12,7 +12,7 @@ except:
 
 from test_utils import make_message, make_message_ur, next_data
 
-from ur.bytewords import STYLE_MINIMAL
+# from ur.bytewords import STYLE_STANDARD, STYLE_URI, STYLE_MINIMAL
 from ur.bytewords.bytewords_decode import BytewordsDecoder
 from ur.bytewords.bytewords_encode import BytewordsEncoder
 from ur.utils import xor_into
@@ -69,17 +69,17 @@ class TestUR(BaseClass):
         input = bytes([0, 1, 2, 128, 255])
         # assert(BytewordsEncoder.encode(STYLE_STANDARD, input) == "able acid also lava zoom jade need echo taxi")
         # assert(BytewordsEncoder.encode(STYLE_URI, input) == "able-acid-also-lava-zoom-jade-need-echo-taxi")
-        assert(BytewordsEncoder.encode(STYLE_MINIMAL, input) == "AEADAOLAZMJENDEOTI")
+        assert(BytewordsEncoder.encode(input) == "AEADAOLAZMJENDEOTI")
 
         # assert(BytewordsDecoder.decode(STYLE_STANDARD, "ABLE acid also lava zoom jade need echo taxi") == input)
         # assert(BytewordsDecoder.decode(STYLE_URI, "able-ACID-also-lava-zoom-jade-need-echo-taxi") == input)
-        assert(BytewordsDecoder.decode(STYLE_MINIMAL, "AEadaolazmjendeoTI") == input)
+        assert(BytewordsDecoder.decode("AEadaolazmjendeoTI") == input)
 
         # bad checksum
         # self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_STANDARD, "able acid also lava zoom jade need echo wolf"))
         # self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_URI, "able-acid-also-lava-zoom-jade-need-echo-wolf"))
 
-        self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_MINIMAL, "AEADAOLAZMJENDEOWF"))
+        self.assertRaises(ValueError, lambda: BytewordsDecoder.decode("AEADAOLAZMJENDEOWF"))
 
         # too short
         # self.assertRaises(ValueError, lambda: BytewordsDecoder.decode(STYLE_STANDARD, "wolf"))
@@ -121,9 +121,9 @@ class TestUR(BaseClass):
             "fzhycypf"
 
         # assert(BytewordsEncoder.encode(STYLE_STANDARD, input) == encoded)
-        assert(BytewordsEncoder.encode(STYLE_MINIMAL, input) == encoded_minimal.upper())
+        assert(BytewordsEncoder.encode(input) == encoded_minimal.upper())
         # assert(BytewordsDecoder.decode(STYLE_STANDARD, encoded) == input)
-        assert(BytewordsDecoder.decode(STYLE_MINIMAL, encoded_minimal) == input)
+        assert(BytewordsDecoder.decode(encoded_minimal) == input)
 
 
     def test_rng_1(self):
@@ -603,8 +603,8 @@ class TestUR(BaseClass):
                     break
             i+=1
 
-        print("\nMultipart (fountain) encoder/decoder")
-        print(decoder.result.type, decoder.result.cbor)
+        # print("\nMultipart (fountain) encoder/decoder")
+        # print(decoder.result.type, decoder.result.cbor)
 
         assert ur_obj.type == decoder.result.type
         assert ur_obj.cbor == decoder.result.cbor

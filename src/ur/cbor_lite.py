@@ -66,7 +66,6 @@ _SHIFTS_2 = (8, 0)
 BYTE_MASK = 0xFF
 
 
-# STAY
 def get_byte_length(value):
     if value < 24:
         return 0
@@ -83,16 +82,13 @@ class CBOREncoder:
     def __init__(self):
         self.buf = bytearray()
 
-    # STAY
     def get_bytes(self):
         return self.buf
 
-    # STAY
     def encodeTagAndAdditional(self, tag, additional):
         self.buf.append(tag + additional)
         return 1
 
-    # STAY
     def encodeTagAndValue(self, tag, value):
         length = get_byte_length(value)
 
@@ -134,51 +130,24 @@ class CBOREncoder:
         encoded_size = 1 + length
         return encoded_size
 
-    # STAY
     def encodeUnsigned(self, value):
         return self.encodeTagAndValue(Tag_Major_unsignedInteger, value)
 
-    # STAY
     def encodeNegative(self, value):
         return self.encodeTagAndValue(Tag_Major_negativeInteger, value)
 
-    # STAY
     def encodeInteger(self, value):
         if value >= 0:
             return self.encodeUnsigned(value)
         return self.encodeNegative(value)
 
-    # def encodeBool(self, value):
-    #     return self.encodeTagAndValue(
-    #         Tag_Major_simple, Tag_Minor_true if value else Tag_Minor_false
-    #     )
-
-    # STAY
     def encodeBytes(self, value):
         length = self.encodeTagAndValue(Tag_Major_byteString, len(value))
         self.buf += value
         return length + len(value)
 
-    # def encodeEncodedBytes(self, value):
-    #     length = self.encodeTagAndValue(Tag_Major_semantic, Tag_Minor_cborEncodedData)
-    #     return length + self.encodeBytes(value)
-
-    # def encodeEncodedBytes(self, value):
-    #     length = self.encodeTagAndValue(Tag_Major_semantic, Tag_Minor_cborEncodedData)
-    #     return length + self.encodeBytes(value)
-
-    # def encodeText(self, value):
-    #     str_len = len(value)
-    #     length = self.encodeTagAndValue(Tag_Major_textString, str_len)
-    #     self.buf.append(bytes(value, "utf8"))
-    #     return length + str_len
-
-    # STAY
     def encodeArraySize(self, value):
         return self.encodeTagAndValue(Tag_Major_array, value)
-
-    # def encodeMapSize(self, value):
-    #     return self.encodeTagAndValue(Tag_Major_map, value)
 
 
 class CBORDecoder:
@@ -186,7 +155,6 @@ class CBORDecoder:
         self.buf = buf
         self.pos = 0
 
-    # STAY
     def decodeTagAndAdditional(self):
         pos = self.pos
         buf = self.buf
@@ -196,14 +164,12 @@ class CBORDecoder:
         self.pos = pos + 1
         return octet & Tag_Major_mask, octet & Tag_Minor_mask, 1
 
-    # STAY
     def _decode_with_tag(self, expected_tag, flags):
         tag, value, length = self.decodeTagAndValue(flags)
         if tag != expected_tag:
             raise ValueError("Expected " + expected_tag)
         return value, length
 
-    # STAY
     def decodeTagAndValue(self, flags):
         buf = self.buf
         pos = self.pos
@@ -252,37 +218,9 @@ class CBORDecoder:
 
         return tag, value, self.pos - start + 1
 
-    # STAY
     def decodeUnsigned(self, flags=Flag_None):
         return self._decode_with_tag(Tag_Major_unsignedInteger, flags)
 
-    # def decodeNegative(self, flags=Flag_None):
-    #     (tag, value, length) = self.decodeTagAndValue(flags)
-    #     if tag != Tag_Major_negativeInteger:
-    #         raise Exception(
-    #             "Expected Tag_Major_negativeInteger, but found {}".format(tag)
-    #         )
-    #     return (value, length)
-
-    # def decodeInteger(self, flags=Flag_None):
-    #     (tag, value, length) = self.decodeTagAndValue(flags)
-    #     if tag == Tag_Major_unsignedInteger:
-    #         return (value, length)
-    #     elif tag == Tag_Major_negativeInteger:
-    #         # CBOR major type 1: value is -1 - n (RFC 8949)
-    #         return (-1 - value, length)
-
-    # def decodeBool(self, flags=Flag_None):
-    #     (tag, value, length) = self.decodeTagAndValue(flags)
-    #     if tag == Tag_Major_simple:
-    #         if value == Tag_Minor_true:
-    #             return (True, length)
-    #         if value == Tag_Minor_false:
-    #             return (False, length)
-    #         raise Exception("Not a Boolean")
-    #     raise Exception("Not Simple/Boolean")
-
-    # STAY
     def decodeBytes(self, flags=Flag_None):
         # First value is the length of the bytes that follow
         tag, byte_length, size_length = self.decodeTagAndValue(flags)
@@ -297,45 +235,5 @@ class CBORDecoder:
         self.pos += byte_length
         return mv, size_length + byte_length
 
-    # def decodeEncodedBytesPrefix(self, flags=Flag_None):
-    #     (tag, value, length1) = self.decodeTagAndValue(flags)
-    #     if tag != Tag_Major_semantic or value != Tag_Minor_cborEncodedData:
-    #         raise Exception("Not CBOR Encoded Data")
-
-    #     (tag, value, length2) = self.decodeTagAndValue(flags)
-    #     if tag != Tag_Major_byteString:
-    #         raise Exception("Not byteString")
-
-    #     return (tag, value, length1 + length2)
-
-    # def decodeEncodedBytes(self, flags=Flag_None):
-    #     (tag, minor_tag, tag_length) = self.decodeTagAndValue(flags)
-    #     if tag != Tag_Major_semantic or minor_tag != Tag_Minor_cborEncodedData:
-    #         raise Exception("Not CBOR Encoded Data")
-
-    #     (value, length) = self.decodeBytes(flags)
-    #     return (value, tag_length + length)
-
-    # def decodeText(self, flags=Flag_None):
-    #     # First value is the length of the bytes that follow
-    #     (tag, byte_length, size_length) = self.decodeTagAndValue(flags)
-    #     if tag != Tag_Major_textString:
-    #         raise Exception("Not a textString")
-
-    #     end = len(self.buf)
-    #     if end - self.pos < byte_length:
-    #         raise Exception("Not enough input")
-
-    #     value = bytes(self.buf[self.pos : self.pos + byte_length])
-    #     self.pos += byte_length
-    #     return (value, size_length + byte_length)
-
-    # STAY
     def decodeArraySize(self, flags=Flag_None):
         return self._decode_with_tag(Tag_Major_array, flags)
-
-    # def decodeMapSize(self, flags=Flag_None):
-    #     (tag, value, length) = self.decodeTagAndValue(flags)
-    #     if tag != Tag_Major_mask:
-    #         raise Exception("Expected Tag_Major_map, but found {}".format(tag))
-    #     return (value, length)

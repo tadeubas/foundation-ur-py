@@ -12,7 +12,6 @@ from .constants import MAX_UINT32
 from .crc32 import crc32
 
 
-# STAY
 class Part:
     # Optimized attr storage to avoid dict (valuable if many parts)
     __slots__ = ("seq_num", "seq_len", "message_len", "checksum", "data")
@@ -24,7 +23,6 @@ class Part:
         self.checksum = checksum
         self.data = data
 
-    # STAY
     @staticmethod
     def from_cbor(cbor_buf):
         decoder = CBORDecoder(cbor_buf)
@@ -40,7 +38,6 @@ class Part:
 
         return Part(seq_num, seq_len, message_len, checksum, data)
 
-    # STAY???
     def cbor(self):
         encoder = CBOREncoder()
         encoder.encodeArraySize(5)
@@ -51,17 +48,7 @@ class Part:
         encoder.encodeBytes(self.data)
         return encoder.get_bytes()
 
-    # def description(self):
-    #     return "seqNum:{}, seqLen:{}, messageLen:{}, checksum:{}, data:{}".format(
-    #         self.seq_num,
-    #         self.seq_len,
-    #         self.message_len,
-    #         self.checksum,
-    #         data_to_hex(self.data),
-    #     )
 
-
-# STAY
 class FountainEncoder:
     def __init__(self, message, max_fragment_len, first_seq_num=0, min_fragment_len=10):
         assert isinstance(message, bytearray)
@@ -75,7 +62,6 @@ class FountainEncoder:
         )
         self.seq_num = first_seq_num
 
-    # STAY
     @staticmethod
     def find_nominal_fragment_length(message_len, min_fragment_len, max_fragment_len):
         max_fragment_count = message_len // min_fragment_len
@@ -85,10 +71,6 @@ class FountainEncoder:
                 return frag_len
         return max_fragment_len
 
-    # def last_part_indexes(self):
-    #     return self.last_part_indexes
-
-    # STAY
     def seq_len(self):
         return (self.message_len + self.fragment_len - 1) // self.fragment_len
 
@@ -101,12 +83,10 @@ class FountainEncoder:
             return True
         return False
 
-    # STAY
     # True if only a single part will be generated.
     def is_single_part(self):
         return self.seq_len() == 1
 
-    # STAY
     def next_part(self):
         self.seq_num = (self.seq_num + 1) % MAX_UINT32
 
@@ -121,7 +101,6 @@ class FountainEncoder:
             mixed,
         )
 
-    # STAY
     def mix(self, indexes):
         result = bytearray(self.fragment_len)
         msg = self.message

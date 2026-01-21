@@ -10,11 +10,9 @@ from .utils import int_to_bytes
 from .xoshiro256 import Xoshiro256
 
 
-# STAY
 class _DegreeSamplerCache:
     """Cache for choose_fragments -> choose_degree depended on seq_len"""
 
-    # STAY
     class RandomSampler:
         def __init__(self, probs, aliases):
             self.probs = probs
@@ -30,14 +28,12 @@ class _DegreeSamplerCache:
         self.seq_len = None
         self.sampler = None
 
-    # STAY
     def get(self, seq_len):
         if self.seq_len != seq_len:
             self.seq_len = seq_len
             self.sampler = self._build(seq_len)
         return self.sampler
 
-    # STAY
     def _build(self, seq_len):
         # Pre-calculate total for harmonic distribution
         total = 0.0
@@ -86,13 +82,11 @@ class _DegreeSamplerCache:
 _degree_cache = _DegreeSamplerCache()
 
 
-# STAY
 def choose_degree(seq_len, rng):
     sampler = _degree_cache.get(seq_len)
     return sampler.next(rng.next_double) + 1
 
 
-# STAY
 def reset_degree_cache():
     sampler = _degree_cache.sampler
     if sampler:
@@ -102,7 +96,6 @@ def reset_degree_cache():
     _degree_cache.sampler = None
 
 
-# STAY
 def choose_fragments(seq_num, seq_len, checksum):
     if seq_num <= seq_len:
         return frozenset([seq_num - 1])

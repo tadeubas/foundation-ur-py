@@ -37,10 +37,6 @@ def rotl(x, k):
     return ((x << k) | (x >> (64 - k))) & MAX_UINT64
 
 
-# JUMP = [ 0x180ec6d33cfd0aba, 0xd5a61266f0c9392c, 0xa9582618e03fc9aa, 0x39abdc4529b1661c ]
-# LONG_JUMP = [ 0x76e15d3efefdcbbf, 0xc5004e441c522fb3, 0x77710069854ee241, 0x39109bb02acbe635 ]
-
-
 class Xoshiro256:
 
     _INV_M = 1.0 / (float(MAX_UINT64) + 1.0)
@@ -53,16 +49,6 @@ class Xoshiro256:
             self.s[2] = arr[2]
             self.s[3] = arr[3]
 
-    # def _set_s(self, arr):
-    #     for i in range(4):
-    #         o = i * 8
-    #         v = 0
-    #         for n in range(8):
-    #             v <<= 8
-    #             v |= arr[o + n]
-    #         self.s[i] = v
-
-    # STAY
     def _hash_then_set_s(self, buf):
         m = hashlib.sha256()
         m.update(buf)
@@ -82,34 +68,12 @@ class Xoshiro256:
                 | d[o + 7]
             )
 
-    # @classmethod
-    # def from_int8_array(cls, arr):
-    #     x = cls()
-    #     x._set_s(arr)
-    #     return x
-
-    # STAY
     @classmethod
     def from_bytes(cls, buf):
         x = cls()
         x._hash_then_set_s(buf)
         return x
 
-    # @classmethod
-    # def from_crc32(cls, crc32):
-    #     x = cls()
-    #     buf = int_to_bytes(crc32)
-    #     x._hash_then_set_s(buf)
-    #     return x
-
-    # @classmethod
-    # def from_string(cls, s):
-    #     x = cls()
-    #     buf = string_to_bytes(s)
-    #     x._hash_then_set_s(buf)
-    #     return x
-
-    # STAY
     def next(self):
         result = (rotl((self.s[1] * 5) & MAX_UINT64, 7) * 9) & MAX_UINT64
         t = (self.s[1] << 17) & MAX_UINT64
@@ -125,61 +89,8 @@ class Xoshiro256:
 
         return result
 
-    # STAY
     def next_double(self):
         return self.next() * Xoshiro256._INV_M
 
-    # STAY
     def next_int(self, low, high):
         return int(self.next_double() * (high - low + 1) + low) & MAX_UINT64
-
-    # def next_byte(self):
-    #     return self.next_int(0, 255)
-
-    # def next_data(self, count):
-    #     result = bytearray()
-    #     for i in range(count):
-    #         result.append(self.next_byte())
-    #     return result
-
-    # def jump(self):
-    #     global JUMP
-
-    #     s0 = 0
-    #     s1 = 0
-    #     s2 = 0
-    #     s3 = 0
-    #     for i in range(len(JUMP)):
-    #         for b in range(64):
-    #             if JUMP[i] & (1 << b):
-    #                 s0 ^= self.s[0]
-    #                 s1 ^= self.s[1]
-    #                 s2 ^= self.s[2]
-    #                 s3 ^= self.s[3]
-    #             self.next()
-
-    #     self.s[0] = s0
-    #     self.s[1] = s1
-    #     self.s[2] = s2
-    #     self.s[3] = s3
-
-    # def long_jump(self):
-    #     global LONG_JUMP
-
-    #     s0 = 0
-    #     s1 = 0
-    #     s2 = 0
-    #     s3 = 0
-    #     for i in range(len(LONG_JUMP)):
-    #         for b in range(64):
-    #             if LONG_JUMP[i] & (1 << b):
-    #                 s0 ^= self.s[0]
-    #                 s1 ^= self.s[1]
-    #                 s2 ^= self.s[2]
-    #                 s3 ^= self.s[3]
-    #             self.next()
-
-    #     self.s[0] = s0
-    #     self.s[1] = s1
-    #     self.s[2] = s2
-    #     self.s[3] = s3
