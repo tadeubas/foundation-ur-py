@@ -427,6 +427,32 @@ class TestUR(BaseClass):
             print(decoder.result)
             assert(False)
 
+    def test_file_fountain_decoder(self):
+        from ur.file_fountain_decoder import FileFountainDecoder
+
+        message_seed = b"Wolf"
+        message_size = 32767
+        max_fragment_len = 1000
+
+        message = make_message(message_size, message_seed)
+        encoder = FountainEncoder(message, max_fragment_len, 100)
+        decoder = FileFountainDecoder(".")
+
+        # Emulating a do-while loop from the original reference code
+        while True:
+            part = encoder.next_part()
+            decoder.receive_part(part)
+            if decoder.is_complete():
+                break
+
+        if decoder.is_success():
+            with open("./data.txt", "rb") as f:
+                text_result = f.read()
+            assert(text_result == message)
+        else:
+            print(decoder.result)
+            assert(False)
+
     def test_fountain_cbor(self):
         part = Part(12, 8, 100, 0x12345678, bytes([1, 5, 3, 3 ,5]))
         cbor = part.cbor()
@@ -583,6 +609,28 @@ class TestUR(BaseClass):
                 break
 
         if decoder.is_success():
+            assert(decoder.result.type == ur.type)
+            assert(decoder.result.cbor == ur.cbor)
+        else:
+            print('{}'.format(decoder.result))
+            assert(False)
+
+    def test_multipart_file_ur(self):
+        from ur.file_ur_decoder import FileURDecoder
+        ur = make_message_ur(32767)
+        max_fragment_len = 1000
+        first_seq_num = 100
+        encoder = UREncoder(ur, max_fragment_len, first_seq_num)
+        decoder = FileURDecoder(".")
+        while True:
+            part = encoder.next_part()
+            decoder.receive_part(part)
+            if decoder.is_complete():
+                break
+
+        if decoder.is_success():
+            with open(decoder.result.cbor, "rb") as f:
+                decoder.result.cbor = f.read()
             assert(decoder.result.type == ur.type)
             assert(decoder.result.cbor == ur.cbor)
         else:
