@@ -36,9 +36,13 @@ class FountainDecoder(BasicDecoder):
 
         @classmethod
         def from_encoder_part(cls, p):
-            return cls(choose_fragments(p.seq_num, p.seq_len, p.checksum), p.data[:])
+            return cls(
+                choose_fragments(p.seq_num, p.seq_len, p.checksum), memoryview(p.data)
+            )
 
     # FountainDecoder
+    MAX_QUEUE = 8
+
     def __init__(self):
         super().__init__()
         self.received_part_indexes = set()
@@ -120,9 +124,12 @@ class FountainDecoder(BasicDecoder):
         else:
             self.process_mixed_part(part)
 
-            # Aggressive queue compaction for RAM (Ideally, it would be 16)
-            if self.queue_index > 8 and self.queue_index == len(self.queued_parts):
-                self.queued_parts.clear()
+            # Aggressive queue compaction for RAM
+            if (
+                len(self.queued_parts) > self.MAX_QUEUE
+                and self.queue_index >= self.MAX_QUEUE
+            ):
+                self.queued_parts = self.queued_parts[self.queue_index :]
                 self.queue_index = 0
 
     def reduce_mixed_by(self, p):
@@ -149,6 +156,24 @@ class FountainDecoder(BasicDecoder):
         # `a` is not reducable by `b`, so return a
         return a
 
+    def _store_fragment(self, _index, part):
+        # store whole part
+        self.simple_parts[part.indexes] = part
+
+    def _finalize_message(self):
+        fragments = [None] * self.expected_part_count()
+        for part in self.simple_parts.values():
+            fragments[part.index()] = part.data
+
+        message = self.join_fragments(fragments, self.expected_message_len)
+
+        # Verify the message checksum and note success or failure
+        checksum = crc32(message)
+        if checksum == self.expected_checksum:
+            self.result = message
+        else:
+            self.result = InvalidChecksum()
+
     def process_simple_part(self, p):
         # Don't process duplicate parts
         fragment_index = p.index()
@@ -156,27 +181,14 @@ class FountainDecoder(BasicDecoder):
             return
 
         # Record this part
-        self.simple_parts[p.indexes] = p
+        self._store_fragment(fragment_index, p)
         self.received_part_indexes.add(fragment_index)
 
         # If we've received all the parts
         if self.received_part_indexes == self.expected_part_indexes:
             # Reassemble the message from its fragments
-            fragments = [None] * self.expected_part_count()
-            for part in self.simple_parts.values():
-                fragments[part.index()] = part.data
-
-            message = self.join_fragments(fragments, self.expected_message_len)
-
-            # Verify the message checksum and note success or failure
-            checksum = crc32(message)
-            if checksum == self.expected_checksum:
-                self.result = bytes(message)
-            else:
-                self.result = InvalidChecksum()
-
+            self._finalize_message()
             self._clear_caches()
-
         else:
             # Reduce all the mixed parts by this part
             self.reduce_mixed_by(p)

@@ -8,5 +8,5 @@ import binascii
 from .constants import MAX_UINT32
 
 
-def crc32(buf):
-    return binascii.crc32(buf) & MAX_UINT32
+def crc32(buf, prev=0):
+    return binascii.crc32(buf, prev) & MAX_UINT32

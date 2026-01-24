@@ -1,4 +1,9 @@
-# STAY
+#
+# Copyright © 2020 Foundation Devices, Inc. and Contributors
+# Licensed under the "BSD-2-Clause Plus Patent License"
+#
+
+
 class BasicDecoder:
     def __init__(self):
         self.result = None
