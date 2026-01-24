@@ -148,7 +148,8 @@ class FountainDecoder(BasicDecoder):
         # `a` is not reducable by `b`, so return a
         return a
 
-    def _store_fragment(self, _index, part):
+    # pylint: disable=unused-argument
+    def _store_fragment(self, index, part):
         # store whole part
         self.simple_parts[part.indexes] = part
 
