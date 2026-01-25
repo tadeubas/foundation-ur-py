@@ -9,7 +9,7 @@ from .fountain_utils import (
     choose_fragments,
     reset_degree_cache,
 )
-from .utils import join_bytes, xor_into, take_first
+from .utils import join_bytes, xor_into
 from .crc32 import crc32
 from .basic_decoder import BasicDecoder
 
@@ -23,10 +23,10 @@ class FountainDecoder(BasicDecoder):
         __slots__ = ("indexes", "data", "_index")
 
         def __init__(self, indexes, data):
-            self.indexes = frozenset(indexes)
+            self.indexes = indexes
             self.data = data
             # cache its index once if simple part
-            self._index = next(iter(self.indexes)) if len(self.indexes) == 1 else None
+            self._index = next(iter(indexes)) if len(indexes) == 1 else None
 
         def is_simple(self):
             return self._index is not None
@@ -36,13 +36,9 @@ class FountainDecoder(BasicDecoder):
 
         @classmethod
         def from_encoder_part(cls, p):
-            return cls(
-                choose_fragments(p.seq_num, p.seq_len, p.checksum), memoryview(p.data)
-            )
+            return cls(choose_fragments(p.seq_num, p.seq_len, p.checksum), p.data)
 
     # FountainDecoder
-    MAX_QUEUE = 8
-
     def __init__(self):
         super().__init__()
         self.received_part_indexes = set()
@@ -55,7 +51,6 @@ class FountainDecoder(BasicDecoder):
         self.simple_parts = {}
         self.mixed_parts = {}
         self.queued_parts = []
-        self.queue_index = 0
 
     def _clear_caches(self):
         self.simple_parts.clear()
@@ -93,14 +88,14 @@ class FountainDecoder(BasicDecoder):
         if not self.validate_part(encoder_part):
             return False
 
-        # Add this part to the queue
+        # Process this part as if it was from queue
         p = FountainDecoder.Part.from_encoder_part(encoder_part)
         # self.last_part_indexes = p.indexes
-        self.queued_parts.append(p)
+        self.process_queue_item(p)
 
         # Process the queue until we're done or the queue is empty
-        while not self.is_complete() and self.queue_index < len(self.queued_parts):
-            self.process_queue_item()
+        while len(self.queued_parts) > 0 and not self.is_complete():
+            self.process_queue_item(self.queued_parts.pop())
 
         # Keep track of how many parts we've processed
         self.processed_parts_count += 1
@@ -113,24 +108,14 @@ class FountainDecoder(BasicDecoder):
     @staticmethod
     def join_fragments(fragments, message_len):
         message = join_bytes(fragments)
-        return take_first(message, message_len)
+        return message[:message_len]
 
-    def process_queue_item(self):
-        part = self.queued_parts[self.queue_index]
-        self.queue_index += 1
+    def process_queue_item(self, part):
 
         if part.is_simple():
             self.process_simple_part(part)
         else:
             self.process_mixed_part(part)
-
-            # Aggressive queue compaction for RAM
-            if (
-                len(self.queued_parts) > self.MAX_QUEUE
-                and self.queue_index >= self.MAX_QUEUE
-            ):
-                self.queued_parts = self.queued_parts[self.queue_index :]
-                self.queue_index = 0
 
     def reduce_mixed_by(self, p):
         new_mixed = {}
@@ -140,11 +125,12 @@ class FountainDecoder(BasicDecoder):
                 self.queued_parts.append(reduced)
             else:
                 new_mixed[reduced.indexes] = reduced
-        self.mixed_parts = new_mixed
+        self.mixed_parts.clear()
+        self.mixed_parts.update(new_mixed)
 
     def reduced_part_by_part(self, a, b):
         # If the fragments mixed into `b` are a strict (proper) subset of those in `a`...
-        if b.indexes.issubset(a.indexes) and b.indexes != a.indexes:
+        if b.indexes != a.indexes and b.indexes.issubset(a.indexes):
             # The new fragments in the revised part are `a` - `b`
             new_indexes = a.indexes.difference(b.indexes)
             # The new data in the revised part are `a` XOR `b`
@@ -195,17 +181,21 @@ class FountainDecoder(BasicDecoder):
 
     def process_mixed_part(self, p):
         # Don't process duplicate parts
-        for r in self.mixed_parts.values():
-            if r == p.indexes:
-                return
+        if p.indexes in self.mixed_parts:
+            return
 
         # Reduce this part by all the others
         reduced = p
         for r in self.simple_parts.values():
             reduced = self.reduced_part_by_part(reduced, r)
+            if reduced.is_simple():
+                break
 
-        for r in self.mixed_parts.values():
-            reduced = self.reduced_part_by_part(reduced, r)
+        if not reduced.is_simple():
+            for r in self.mixed_parts.values():
+                reduced = self.reduced_part_by_part(reduced, r)
+                if reduced.is_simple():
+                    break
 
         # If the part is now simple
         if reduced.is_simple():

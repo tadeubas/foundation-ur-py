@@ -39,6 +39,3 @@ def xor_into(target, source):
     for i, b in enumerate(source):
         target[i] ^= b
 
-
-def take_first(s, count):
-    return s[:count]

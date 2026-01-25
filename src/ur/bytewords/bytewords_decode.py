@@ -55,12 +55,13 @@ class BytewordsDecoder:
         if value == -1:
             raise ValueError("Unknown Bytewords word")
 
-        if word_len == 4:
-            expected_offset = value << 2  # * 4
-            if (buf[pos + 1] & CASE_MASK) != BYTEWORDS[expected_offset + 1] or (
-                buf[pos + 2] & CASE_MASK
-            ) != BYTEWORDS[expected_offset + 2]:
-                raise ValueError("Bytewords word mismatch")
+        # minimal lib using only STYLE_MINIMAL (word_len == 2)
+        # if word_len == 4:
+        #     expected_offset = value << 2  # * 4
+        #     if (buf[pos + 1] & CASE_MASK) != BYTEWORDS[expected_offset + 1] or (
+        #         buf[pos + 2] & CASE_MASK
+        #     ) != BYTEWORDS[expected_offset + 2]:
+        #         raise ValueError("Bytewords word mismatch")
 
         return value
 

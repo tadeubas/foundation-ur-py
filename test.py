@@ -366,7 +366,7 @@ class TestUR(BaseClass):
 
         # Create a mixed part: indexes {0,1}
         p = FountainDecoder.Part(
-            indexes={0, 1},
+            indexes=frozenset({0, 1}),
             data=bytearray(b'\x01\x02\x03')
         )
 
@@ -384,14 +384,14 @@ class TestUR(BaseClass):
 
         # Known simple part
         simple = FountainDecoder.Part(
-            indexes={0},
+            indexes=frozenset({0}),
             data=bytearray(b'\x01\x02')
         )
         d.simple_parts[simple.indexes] = simple
 
         # Mixed part including that index
         mixed = FountainDecoder.Part(
-            indexes={0, 1},
+            indexes=frozenset({0, 1}),
             data=bytearray(b'\x05\x06')
         )
 
