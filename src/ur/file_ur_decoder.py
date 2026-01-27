@@ -6,6 +6,7 @@
 from .ur_decoder import URDecoder
 from .file_fountain_decoder import FileFountainDecoder
 
+
 class FileURDecoder(URDecoder):
     """
     UR decoder that uses a FileFountainDecoder to minimize RAM usage.
