@@ -6,14 +6,18 @@
 from .ur_encoder import UREncoder
 from .file_fountain_encoder import FileFountainEncoder
 
+
 class FileUREncoder(UREncoder):
     """
     UR decoder that uses a FileFountainEncoder to minimize RAM usage.
     """
 
+    # pylint: disable=super-init-not-called
     def __init__(self, ur, max_fragment_len, first_seq_num=0, min_fragment_len=10):
         self.ur = ur
-        self.fountain_encoder = FileFountainEncoder(ur.cbor, max_fragment_len, first_seq_num, min_fragment_len)
+        self.fountain_encoder = FileFountainEncoder(
+            ur.cbor, max_fragment_len, first_seq_num, min_fragment_len
+        )
 
     def next_part(self):
         part = self.fountain_encoder.next_part()

@@ -15,10 +15,14 @@ class FileFountainDecoder(FountainDecoder):
 
     def __init__(self, workdir):
         super().__init__()
+        self.mixed_part_indexes = set()
         self.workdir = workdir
 
     def _fragment_path(self, index):
-        return self.workdir + "/" + "frag_%05d.tmp" % index
+        return self.workdir + "/" + "frag_%s.tmp" % index
+
+    def _fragment_path_mixed(self, indexes):
+        return self._fragment_path("-".join(map(str, indexes)))
 
     def _clear_files(self):
         for name in os.listdir(self.workdir):
@@ -56,6 +60,10 @@ class FileFountainDecoder(FountainDecoder):
         with open(self._fragment_path(index), "wb") as f:
             f.write(part.data)
 
+    def _store_mixed_fragment(self, indexes, part):
+        with open(self._fragment_path_mixed(indexes), "wb") as f:
+            f.write(part.data)
+
     def _finalize_message(self):
         out_path = self.workdir + "/" + "data.txt"
 
@@ -65,3 +73,54 @@ class FileFountainDecoder(FountainDecoder):
             self.result = out_path  # or open file handle if you prefer
         else:
             self.result = InvalidChecksum()
+
+    def reduce_mixed_by(self, p):
+        new_mixed_indexes = set()
+
+        for indexes in self.mixed_part_indexes:
+            with open(self._fragment_path_mixed(indexes), "rb") as mixed_frag:
+                value = mixed_frag.read()
+            reduced = self.reduced_part_by_part(FountainDecoder.Part(indexes, value), p)
+            if reduced.is_simple():
+                self.queued_parts.append(reduced)
+            else:
+                self._store_mixed_fragment(reduced.indexes, reduced)
+                new_mixed_indexes.add(reduced.indexes)
+
+        self.mixed_part_indexes.clear()
+        self.mixed_part_indexes.update(new_mixed_indexes)
+
+    def process_mixed_part(self, p):
+        if p.indexes in self.mixed_part_indexes:
+            return
+
+        # Reduce this part by all the others
+        reduced = p
+
+        for index in self.received_part_indexes:
+            with open(self._fragment_path(index), "rb") as frag:
+                value = frag.read()
+                r = FountainDecoder.Part(frozenset([index]), value)
+            reduced = self.reduced_part_by_part(reduced, r)
+            if reduced.is_simple():
+                break
+
+        if not reduced.is_simple():
+            for indexes in self.mixed_part_indexes:
+                with open(self._fragment_path_mixed(indexes), "rb") as mix_frag:
+                    value = mix_frag.read()
+                    r = FountainDecoder.Part(indexes, value)
+                reduced = self.reduced_part_by_part(reduced, r)
+                if reduced.is_simple():
+                    break
+
+        # If the part is now simple
+        if reduced.is_simple():
+            # Add it to the queue
+            self.queued_parts.append(reduced)
+        else:
+            # Reduce all the mixed parts by this one
+            self.reduce_mixed_by(reduced)
+            # Record this new mixed part
+            self._store_mixed_fragment(reduced.indexes, reduced)
+            self.mixed_part_indexes.add(reduced.indexes)
