@@ -11,6 +11,7 @@ from .crc32 import crc32
 
 
 class FileFountainEncoder(FountainEncoder):
+    # pylint: disable=super-init-not-called
     def __init__(
         self,
         file_path,
