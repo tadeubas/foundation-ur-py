@@ -66,7 +66,7 @@ class TestUR(BaseClass):
         assert check_crc32("Wolf", "598c84dc")
 
     def test_bytewords_1(self):
-        input = bytes([0, 1, 2, 128, 255])
+        input = bytearray([0, 1, 2, 128, 255])
         # assert(BytewordsEncoder.encode(STYLE_STANDARD, input) == "able acid also lava zoom jade need echo taxi")
         # assert(BytewordsEncoder.encode(STYLE_URI, input) == "able-acid-also-lava-zoom-jade-need-echo-taxi")
         assert(BytewordsEncoder.encode(input) == "AEADAOLAZMJENDEOTI")

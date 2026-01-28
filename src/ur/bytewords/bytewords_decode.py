@@ -72,6 +72,7 @@ class BytewordsDecoder:
         """
         if isinstance(text, str):
             text = text.encode()
+        text = memoryview(text)
         word_len = 4
         buf = bytearray()
         word_len = 2
