@@ -33,11 +33,15 @@ class FileFountainDecoder(FountainDecoder):
 
     def _clear_caches(self):
         super()._clear_caches()
+        self.mixed_part_indexes.clear()
         self._clear_files()
 
     def join_fragments_from_files(self, out_path):
         remaining = self.expected_message_len
         checksum = 0
+
+        buf = bytearray(self.expected_fragment_len)
+        mv = memoryview(buf)
 
         with open(out_path, "wb") as out:
             for i in range(self.expected_part_count()):
@@ -45,23 +49,29 @@ class FileFountainDecoder(FountainDecoder):
                     break
 
                 with open(self._fragment_path(i), "rb") as frag:
-                    chunk = frag.read()
+                    while remaining > 0:
+                        n = frag.readinto(buf)
+                        if n == 0:
+                            break
 
-                    if len(chunk) > remaining:
-                        chunk = chunk[:remaining]
+                        # pylint: disable=consider-using-min-builtin
+                        if n > remaining:
+                            n = remaining
 
-                    checksum = crc32(chunk, checksum)
-                    out.write(chunk)
-                    remaining -= len(chunk)
+                        chunk = mv[:n]
+                        checksum = crc32(chunk, checksum)
+                        out.write(chunk)
+                        remaining -= n
 
         return checksum
 
     def _store_fragment(self, index, part):
-        with open(self._fragment_path(index), "wb") as f:
-            f.write(part.data)
-
-    def _store_mixed_fragment(self, indexes, part):
-        with open(self._fragment_path_mixed(indexes), "wb") as f:
+        filename = (
+            self._fragment_path(index)
+            if isinstance(index, int)
+            else self._fragment_path_mixed(index)
+        )
+        with open(filename, "wb") as f:
             f.write(part.data)
 
     def _finalize_message(self):
@@ -74,23 +84,32 @@ class FileFountainDecoder(FountainDecoder):
         else:
             self.result = InvalidChecksum()
 
+    def _retrieve_part_data(self, p):
+        if isinstance(p.data, str):
+            with open(p.data, "rb") as frag:
+                p.data = frag.read()
+
     def reduce_mixed_by(self, p):
         new_mixed_indexes = set()
 
         for indexes in self.mixed_part_indexes:
+            value_bytearray = bytearray(self.expected_fragment_len)
             with open(self._fragment_path_mixed(indexes), "rb") as mixed_frag:
-                value = mixed_frag.read()
-            reduced = self.reduced_part_by_part(FountainDecoder.Part(indexes, value), p)
+                mixed_frag.readinto(value_bytearray)
+            reduced = self.reduced_part_by_part(
+                FountainDecoder.Part(indexes, value_bytearray), p
+            )
             if reduced.is_simple():
                 self.queued_parts.append(reduced)
             else:
-                self._store_mixed_fragment(reduced.indexes, reduced)
+                self._store_fragment(reduced.indexes, reduced)
                 new_mixed_indexes.add(reduced.indexes)
 
         self.mixed_part_indexes.clear()
         self.mixed_part_indexes.update(new_mixed_indexes)
 
     def process_mixed_part(self, p):
+        # Don't process duplicate parts
         if p.indexes in self.mixed_part_indexes:
             return
 
@@ -98,18 +117,14 @@ class FileFountainDecoder(FountainDecoder):
         reduced = p
 
         for index in self.received_part_indexes:
-            with open(self._fragment_path(index), "rb") as frag:
-                value = frag.read()
-                r = FountainDecoder.Part(frozenset([index]), value)
+            r = FountainDecoder.Part(frozenset([index]), self._fragment_path(index))
             reduced = self.reduced_part_by_part(reduced, r)
             if reduced.is_simple():
                 break
 
         if not reduced.is_simple():
             for indexes in self.mixed_part_indexes:
-                with open(self._fragment_path_mixed(indexes), "rb") as mix_frag:
-                    value = mix_frag.read()
-                    r = FountainDecoder.Part(indexes, value)
+                r = FountainDecoder.Part(indexes, self._fragment_path_mixed(indexes))
                 reduced = self.reduced_part_by_part(reduced, r)
                 if reduced.is_simple():
                     break
@@ -122,5 +137,5 @@ class FileFountainDecoder(FountainDecoder):
             # Reduce all the mixed parts by this one
             self.reduce_mixed_by(reduced)
             # Record this new mixed part
-            self._store_mixed_fragment(reduced.indexes, reduced)
+            self._store_fragment(reduced.indexes, reduced)
             self.mixed_part_indexes.add(reduced.indexes)
