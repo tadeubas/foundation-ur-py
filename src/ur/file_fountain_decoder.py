@@ -18,6 +18,7 @@ class FileFountainDecoder(FountainDecoder):
         super().__init__()
         self.mixed_part_indexes = set()
         self.workdir = workdir
+        self._clear_files()
 
     def _fragment_path(self, index):
         return self.workdir + "/" + "%s.tmp" % index
