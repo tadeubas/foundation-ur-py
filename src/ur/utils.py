@@ -36,6 +36,6 @@ def join_bytes(chunks):
 
 
 def xor_into(target, source):
+    source = memoryview(source)
     for i, b in enumerate(source):
         target[i] ^= b
-

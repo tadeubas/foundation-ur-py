@@ -100,8 +100,6 @@ class FountainDecoder(BasicDecoder):
         # Keep track of how many parts we've processed
         self.processed_parts_count += 1
 
-        # self.print_part_end()
-
         return True
 
     # Join all the fragments of a message together, throwing away any padding
@@ -111,7 +109,6 @@ class FountainDecoder(BasicDecoder):
         return message[:message_len]
 
     def process_queue_item(self, part):
-
         if part.is_simple():
             self.process_simple_part(part)
         else:
@@ -128,13 +125,22 @@ class FountainDecoder(BasicDecoder):
         self.mixed_parts.clear()
         self.mixed_parts.update(new_mixed)
 
+    def _retrieve_part_data(self, p):
+        pass
+
     def reduced_part_by_part(self, a, b):
         # If the fragments mixed into `b` are a strict (proper) subset of those in `a`...
         if b.indexes != a.indexes and b.indexes.issubset(a.indexes):
             # The new fragments in the revised part are `a` - `b`
             new_indexes = a.indexes.difference(b.indexes)
+
+            # hook for superclass FileFountainDecoder
+            self._retrieve_part_data(b)
+
             # The new data in the revised part are `a` XOR `b`
-            new_data = bytearray(a.data)
+            new_data = a.data
+            if not isinstance(new_data, bytearray):
+                new_data = bytearray(a.data)
             xor_into(new_data, b.data)
 
             return self.Part(new_indexes, new_data)
@@ -186,6 +192,7 @@ class FountainDecoder(BasicDecoder):
 
         # Reduce this part by all the others
         reduced = p
+
         for r in self.simple_parts.values():
             reduced = self.reduced_part_by_part(reduced, r)
             if reduced.is_simple():

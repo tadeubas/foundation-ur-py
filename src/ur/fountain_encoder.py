@@ -54,9 +54,9 @@ class FountainEncoder:
         assert isinstance(message, bytearray)
         assert len(message) <= MAX_UINT32
 
-        self.message = message
+        self.message = memoryview(message)
         self.message_len = len(message)
-        self.checksum = crc32(message)
+        self.checksum = crc32(self.message)
         self.fragment_len = self.find_nominal_fragment_length(
             self.message_len, min_fragment_len, max_fragment_len
         )
@@ -101,9 +101,13 @@ class FountainEncoder:
             mixed,
         )
 
+    def _get_mix_source(self, msg_len, start, frag_len):
+        end = min(start + frag_len, msg_len)
+        return self.message[start:end]
+
+    # XOR selected fragments
     def mix(self, indexes):
         result = bytearray(self.fragment_len)
-        msg = self.message
         frag_len = self.fragment_len
         msg_len = self.message_len
 
@@ -111,7 +115,7 @@ class FountainEncoder:
             start = index * frag_len
             if start >= msg_len:
                 continue
-            end = min(start + frag_len, msg_len)
-            xor_into(result, msg[start:end])
+
+            xor_into(result, self._get_mix_source(msg_len, start, frag_len))
 
         return result

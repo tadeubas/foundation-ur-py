@@ -22,9 +22,9 @@ def next_byte(rng):
     return next_int(rng, 0, 255)
 
 def next_data(rng, count):
-    result = bytearray()
-    for _ in range(count):
-        result.append(next_byte(rng))
+    result = bytearray(count)
+    for i in range(count):
+        result[i] = next_byte(rng)
     return result
 
 def make_message(length, seed = b"Wolf"):
