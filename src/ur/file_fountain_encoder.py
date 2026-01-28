@@ -1,0 +1,68 @@
+#
+# Copyright © 2020 Foundation Devices, Inc. and Contributors
+# Licensed under the "BSD-2-Clause Plus Patent License"
+#
+
+import os
+from .fountain_encoder import FountainEncoder
+from .constants import MAX_UINT32
+from .crc32 import crc32
+
+
+class FileFountainEncoder(FountainEncoder):
+    # pylint: disable=super-init-not-called
+    def __init__(
+        self,
+        file_path,
+        max_fragment_len,
+        first_seq_num=0,
+        min_fragment_len=10,
+    ):
+        self.file_path = file_path
+
+        stat = os.stat(file_path)
+        self.message_len = stat.st_size
+        assert self.message_len <= MAX_UINT32
+
+        self.checksum = self._compute_checksum()
+
+        self.fragment_len = self.find_nominal_fragment_length(
+            self.message_len,
+            min_fragment_len,
+            max_fragment_len,
+        )
+
+        self.seq_num = first_seq_num
+
+    def _read_range(self, offset, length):
+        with open(self.file_path, "rb") as f:
+            f.seek(offset)
+            return f.read(length)
+
+    def _compute_checksum(self):
+        checksum = 0
+        remaining = self.message_len
+
+        buf = bytearray(256)
+        mv = memoryview(buf)
+
+        with open(self.file_path, "rb") as f:
+            while remaining > 0:
+                n = f.readinto(buf)
+                if n == 0:
+                    break
+
+                # pylint: disable=consider-using-min-builtin
+                if n > remaining:
+                    n = remaining
+
+                checksum = crc32(mv[:n], checksum)
+                remaining -= n
+
+        return checksum
+
+    #  overrides ------
+
+    def _get_mix_source(self, msg_len, start, frag_len):
+        size = min(frag_len, msg_len - start)
+        return self._read_range(start, size)
