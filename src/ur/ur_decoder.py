@@ -11,9 +11,6 @@ from .fountain_decoder import FountainDecoder
 from .bytewords.bytewords_decode import BytewordsDecoder
 from .basic_decoder import BasicDecoder
 
-SLASH = ord("/")
-HYPHEN = ord("-")
-
 
 class URDecoder(BasicDecoder):
     # Start decoding a (possibly) multi-part UR
@@ -29,33 +26,26 @@ class URDecoder(BasicDecoder):
         if is_multi:
             raise ValueError("Multi-part UR")
         cbor = BytewordsDecoder.decode(body)
-        return UR(bytes(_type).decode(), cbor)
-
-    @staticmethod
-    def _find_byte(mv, byte):
-        for i, b in enumerate(mv):
-            if b == byte:
-                return i
-        return -1
+        return UR(_type.decode(), cbor)
 
     @staticmethod
     def parse(data):
         if isinstance(data, str):
             data = data.encode()
 
-        data = memoryview(data)
         path = data[3:]
 
         # Find first slash (type separator)
-        p0 = URDecoder._find_byte(path, SLASH)
+        p0 = path.find(b"/")
         if p0 < 0:
             raise ValueError("Invalid UR")
 
         _type = path[:p0]
+
         rest = path[p0 + 1 :]
 
         # Single / multi
-        p1 = URDecoder._find_byte(rest, SLASH)
+        p1 = rest.find(b"/")
         if p1 < 0:
             # single-part
             return _type, rest, False
@@ -67,11 +57,11 @@ class URDecoder(BasicDecoder):
 
     @staticmethod
     def parse_sequence_component(s):
-        i = URDecoder._find_byte(s, HYPHEN)
+        i = s.find(b"-")
         if i < 0:
             raise ValueError("Invalid sequence component")
-        a = int(bytes(s[:i]))
-        b = int(bytes(s[i + 1 :]))
+        a = int(s[:i])
+        b = int(s[i + 1 :])
         if a < 1 or b < 1:
             raise ValueError("Invalid sequence component")
         return a, b
@@ -96,7 +86,7 @@ class URDecoder(BasicDecoder):
         if not is_multi:
             body = payload
             cbor = BytewordsDecoder.decode(body)
-            self.result = UR(bytes(_type).decode(), cbor)
+            self.result = UR(_type.decode(), cbor)
             return True
 
         seq, fragment = payload
@@ -112,7 +102,7 @@ class URDecoder(BasicDecoder):
             return False
 
         if self.fountain_decoder.is_success():
-            self.result = UR(bytes(_type).decode(), self.fountain_decoder.result)
+            self.result = UR(_type.decode(), self.fountain_decoder.result)
         else:
             self.result = self.fountain_decoder.result
 

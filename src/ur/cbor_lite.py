@@ -79,28 +79,14 @@ def get_byte_length(value):
 
 
 class CBOREncoder:
-    def __init__(self, capacity=64):
-        self.buf = bytearray(capacity)
-        self.pos = 0
-
-    def _ensure(self, n):
-        needed = self.pos + n
-        if needed <= len(self.buf):
-            return
-
-        # grow in controlled steps
-        new_len = max(len(self.buf) * 2, needed)
-        new = bytearray(new_len)
-        new[: self.pos] = self.buf[: self.pos]
-        self.buf = new
+    def __init__(self):
+        self.buf = bytearray()
 
     def get_bytes(self):
-        return self.buf[: self.pos]
+        return self.buf
 
     def encodeTagAndAdditional(self, tag, additional):
-        self._ensure(1)
-        self.buf[self.pos] = tag + additional
-        self.pos += 1
+        self.buf.append(tag + additional)
         return 1
 
     def encodeTagAndValue(self, tag, value):
@@ -109,39 +95,31 @@ class CBOREncoder:
         # 5-8 bytes required, use 8 bytes
         if 5 <= length <= 8:
             self.encodeTagAndAdditional(tag, Tag_Minor_length8)
-            self._ensure(8)
-            self.buf[self.pos] = (value >> 56) & BYTE_MASK
-            self.buf[self.pos + 1] = (value >> 48) & BYTE_MASK
-            self.buf[self.pos + 2] = (value >> 40) & BYTE_MASK
-            self.buf[self.pos + 3] = (value >> 32) & BYTE_MASK
-            self.buf[self.pos + 4] = (value >> 24) & BYTE_MASK
-            self.buf[self.pos + 5] = (value >> 16) & BYTE_MASK
-            self.buf[self.pos + 6] = (value >> 8) & BYTE_MASK
-            self.buf[self.pos + 7] = value & BYTE_MASK
-            self.pos += 8
+            self.buf.append((value >> 56) & BYTE_MASK)
+            self.buf.append((value >> 48) & BYTE_MASK)
+            self.buf.append((value >> 40) & BYTE_MASK)
+            self.buf.append((value >> 32) & BYTE_MASK)
+            self.buf.append((value >> 24) & BYTE_MASK)
+            self.buf.append((value >> 16) & BYTE_MASK)
+            self.buf.append((value >> 8) & BYTE_MASK)
+            self.buf.append(value & BYTE_MASK)
 
         # 3-4 bytes required, use 4 bytes
         elif length in (3, 4):
             self.encodeTagAndAdditional(tag, Tag_Minor_length4)
-            self._ensure(4)
-            self.buf[self.pos] = (value >> 24) & BYTE_MASK
-            self.buf[self.pos + 1] = (value >> 16) & BYTE_MASK
-            self.buf[self.pos + 2] = (value >> 8) & BYTE_MASK
-            self.buf[self.pos + 3] = value & BYTE_MASK
-            self.pos += 4
+            self.buf.append((value >> 24) & BYTE_MASK)
+            self.buf.append((value >> 16) & BYTE_MASK)
+            self.buf.append((value >> 8) & BYTE_MASK)
+            self.buf.append(value & BYTE_MASK)
 
         elif length == 2:
             self.encodeTagAndAdditional(tag, Tag_Minor_length2)
-            self._ensure(2)
-            self.buf[self.pos] = (value >> 8) & BYTE_MASK
-            self.buf[self.pos + 1] = value & BYTE_MASK
-            self.pos += 2
+            self.buf.append((value >> 8) & BYTE_MASK)
+            self.buf.append(value & BYTE_MASK)
 
         elif length == 1:
             self.encodeTagAndAdditional(tag, Tag_Minor_length1)
-            self._ensure(1)
-            self.buf[self.pos] = value & BYTE_MASK
-            self.pos += 1
+            self.buf.append(value & BYTE_MASK)
 
         elif length == 0:
             self.encodeTagAndAdditional(tag, value)
@@ -164,12 +142,9 @@ class CBOREncoder:
         return self.encodeNegative(value)
 
     def encodeBytes(self, value):
-        len_value = len(value)
-        length = self.encodeTagAndValue(Tag_Major_byteString, len_value)
-        self._ensure(len_value)
-        self.buf[self.pos : self.pos + len_value] = value
-        self.pos += len_value
-        return length + len_value
+        length = self.encodeTagAndValue(Tag_Major_byteString, len(value))
+        self.buf += value
+        return length + len(value)
 
     def encodeArraySize(self, value):
         return self.encodeTagAndValue(Tag_Major_array, value)

@@ -101,21 +101,19 @@ class FountainEncoder:
             mixed,
         )
 
-    def _get_mix_source(self, msg_len, start, frag_len):
-        end = min(start + frag_len, msg_len)
-        return self.message[start:end]
-
     # XOR selected fragments
     def mix(self, indexes):
         result = bytearray(self.fragment_len)
         frag_len = self.fragment_len
         msg_len = self.message_len
+        msg = self.message
 
         for index in indexes:
             start = index * frag_len
             if start >= msg_len:
                 continue
 
-            xor_into(result, self._get_mix_source(msg_len, start, frag_len))
+            end = min(start + frag_len, msg_len)
+            xor_into(result, msg[start:end])
 
         return result
