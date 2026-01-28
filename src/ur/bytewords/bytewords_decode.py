@@ -73,21 +73,23 @@ class BytewordsDecoder:
         if isinstance(text, str):
             text = text.encode()
         text = memoryview(text)
-        word_len = 4
-        buf = bytearray()
         word_len = 2
-        for i in range(0, len(text), word_len):
-            buf.append(cls._decode_word(text, i, word_len))
+        txt_len = len(text)
+        buf = bytearray(txt_len // 2)
+
+        j = 0
+        for i in range(0, txt_len, word_len):
+            buf[j] = cls._decode_word(text, i, word_len)
+            j += 1
 
         if len(buf) < 5:
             raise ValueError("Bytewords too short")
 
         # Checksum validation
-        body = buf[:-4]
-        checksum_bytes = buf[-4:]
-        computed = crc32(body).to_bytes(4, "big")
+        body_len = len(buf) - 4
+        computed = crc32(memoryview(buf)[:body_len]).to_bytes(4, "big")
 
-        if computed != checksum_bytes:
+        if computed != buf[body_len:]:
             raise ValueError("Bytewords checksum mismatch")
 
-        return body
+        return buf[:body_len]
