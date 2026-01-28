@@ -26,7 +26,7 @@ class FileFountainDecoder(FountainDecoder):
     def _encode_indexes(self, indexes):
         b = bytes(indexes)
         s = binascii.b2a_base64(b)
-        return s.replace(b'+', b'-').replace(b'/', b'_').replace(b'\n', b'').decode()
+        return s.replace(b"+", b"-").replace(b"/", b"_").replace(b"\n", b"").decode()
 
     def _fragment_path_mixed(self, indexes):
         return self._fragment_path(self._encode_indexes(indexes))
