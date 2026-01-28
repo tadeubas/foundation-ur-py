@@ -20,8 +20,7 @@ class FileFountainEncoder(FountainEncoder):
     ):
         self.file_path = file_path
 
-        stat = os.stat(file_path)
-        self.message_len = stat.st_size
+        self.message_len = os.stat(file_path)[6]
         assert self.message_len <= MAX_UINT32
 
         self.checksum = self._compute_checksum()
