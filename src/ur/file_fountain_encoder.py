@@ -5,6 +5,7 @@
 
 import os
 from .fountain_encoder import FountainEncoder
+from .utils import xor_into
 from .constants import MAX_UINT32
 from .crc32 import crc32
 
@@ -62,6 +63,18 @@ class FileFountainEncoder(FountainEncoder):
 
     #  overrides ------
 
-    def _get_mix_source(self, msg_len, start, frag_len):
-        size = min(frag_len, msg_len - start)
-        return self._read_range(start, size)
+    # XOR selected fragments
+    def mix(self, indexes):
+        result = bytearray(self.fragment_len)
+        frag_len = self.fragment_len
+        msg_len = self.message_len
+
+        for index in indexes:
+            start = index * frag_len
+            if start >= msg_len:
+                continue
+
+            size = min(frag_len, msg_len - start)
+            xor_into(result, self._read_range(start, size))
+
+        return result
