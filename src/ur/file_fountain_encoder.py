@@ -5,7 +5,6 @@
 
 import os
 from .fountain_encoder import FountainEncoder
-from .utils import xor_into
 from .constants import MAX_UINT32
 from .crc32 import crc32
 
@@ -44,33 +43,26 @@ class FileFountainEncoder(FountainEncoder):
         checksum = 0
         remaining = self.message_len
 
+        buf = bytearray(256)
+        mv = memoryview(buf)
+
         with open(self.file_path, "rb") as f:
             while remaining > 0:
-                chunk = f.read(min(256, remaining))
-                if not chunk:
+                n = f.readinto(buf)
+                if n == 0:
                     break
-                checksum = crc32(chunk, checksum)
-                remaining -= len(chunk)
+
+                # pylint: disable=consider-using-min-builtin
+                if n > remaining:
+                    n = remaining
+
+                checksum = crc32(mv[:n], checksum)
+                remaining -= n
 
         return checksum
 
     #  overrides ------
 
-    def mix(self, indexes):
-        """
-        XOR selected fragments directly from disk.
-        """
-        result = bytearray(self.fragment_len)
-        frag_len = self.fragment_len
-        msg_len = self.message_len
-
-        for index in indexes:
-            start = index * frag_len
-            if start >= msg_len:
-                continue
-
-            size = min(frag_len, msg_len - start)
-            chunk = self._read_range(start, size)
-            xor_into(result, chunk)
-
-        return result
+    def _get_mix_source(self, msg_len, start, frag_len):
+        size = min(frag_len, msg_len - start)
+        return self._read_range(start, size)
