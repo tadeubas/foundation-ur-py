@@ -4,6 +4,7 @@
 #
 
 import os
+import binascii
 from .fountain_decoder import FountainDecoder, InvalidChecksum
 from .crc32 import crc32
 
@@ -19,14 +20,19 @@ class FileFountainDecoder(FountainDecoder):
         self.workdir = workdir
 
     def _fragment_path(self, index):
-        return self.workdir + "/" + "frag_%s.tmp" % index
+        return self.workdir + "/" + "%s.tmp" % index
+
+    def _encode_indexes(self, indexes):
+        b = bytes(indexes)
+        s = binascii.b2a_base64(b)
+        return s.replace(b'+', b'-').replace(b'/', b'_').replace(b'\n', b'').decode()
 
     def _fragment_path_mixed(self, indexes):
-        return self._fragment_path("-".join(map(str, indexes)))
+        return self._fragment_path(self._encode_indexes(indexes))
 
     def _clear_files(self):
         for name in os.listdir(self.workdir):
-            if name.startswith("frag_"):
+            if name.endswith(".tmp"):
                 os.remove(self.workdir + "/" + name)
 
     #  overrides ------

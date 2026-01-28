@@ -10,6 +10,7 @@ try:
 except:
     unittest = None
 
+from unittest import mock
 from test_utils import make_message, make_message_ur, next_data
 
 # from ur.bytewords import STYLE_STANDARD, STYLE_URI, STYLE_MINIMAL
@@ -24,7 +25,7 @@ from ur.ur_encoder import UREncoder
 from ur.ur_decoder import URDecoder
 from ur.crc32 import crc32
 
-TMP_FILE = "./test_input.tmp"
+TMP_FILE = "./test_input.txt"
 
 FOUNTAIN_ENCODER_EXPECTED_PARTS = [
             "seqNum:1, seqLen:9, messageLen:256, checksum:23570951, data:916ec65cf77cadf55cd7f9cda1a1030026ddd42e905b77adc36e4f2d3c",
@@ -695,27 +696,36 @@ class TestUR(BaseClass):
         ur.cbor = TMP_FILE
         max_fragment_len = 1000
         first_seq_num = 100
-        encoder = FileUREncoder(ur, max_fragment_len, first_seq_num)
-        decoder = FileURDecoder(".")
-        while True:
-            part = encoder.next_part()
-            decoder.receive_part(part)
-            if decoder.is_complete():
-                break
 
-        if decoder.is_success():
-            with open(decoder.result.cbor, "rb") as f:
-                decoder.result.cbor = f.read()
-            # test FileUREncoder single UR
-            encoder = FileUREncoder(ur, 999999)
-            ur = URDecoder.decode(encoder.next_part())
+        # mock os.stat
+        import os
+        original_stat = os.stat
+        def real_stat(file_path):
+            l = [0] *11
+            l[6] = original_stat(file_path).st_size
+            return l
+        with mock.patch("os.stat", side_effect=real_stat):
+            encoder = FileUREncoder(ur, max_fragment_len, first_seq_num)
+            decoder = FileURDecoder(".")
+            while True:
+                part = encoder.next_part()
+                decoder.receive_part(part)
+                if decoder.is_complete():
+                    break
 
-            assert(decoder.result.type == ur.type)
-            assert(decoder.result.cbor == ur.cbor)
-            assert(old_cbor == ur.cbor)
-        else:
-            print('{}'.format(decoder.result))
-            assert(False)
+            if decoder.is_success():
+                with open(decoder.result.cbor, "rb") as f:
+                    decoder.result.cbor = f.read()
+                # test FileUREncoder single UR
+                encoder = FileUREncoder(ur, 999999)
+                ur = URDecoder.decode(encoder.next_part())
+
+                assert(decoder.result.type == ur.type)
+                assert(decoder.result.cbor == ur.cbor)
+                assert(old_cbor == ur.cbor)
+            else:
+                print('{}'.format(decoder.result))
+                assert(False)
 
     def test_cbor_encode_decode_single(self):
         from ur.cbor_lite import CBOREncoder, CBORDecoder

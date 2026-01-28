@@ -5,4 +5,5 @@ __pycache__
 .vscode
 .coverage
 data.txt
-test_input.tmp
+test_input.txt
+*.tmp
