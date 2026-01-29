@@ -14,11 +14,23 @@ class FileFountainDecoder(FountainDecoder):
     Fountain decoder that uses a files for fragments to minimize RAM usage.
     """
 
+    # optimizations
+    MAX_MIXED_XOR_DEGREE = 3
+    MAX_MIXED_INDEXES = 6
+    LEN_SIMPLE_AVOID_MIX = 60
+
     def __init__(self, workdir):
         super().__init__()
         self.mixed_part_indexes = set()
         self.workdir = workdir
         self._clear_files()
+
+    # optimization for MAX_MIXED_INDEXES
+    def _limit_mixed_set(self, mix_set):
+        if len(mix_set) > FileFountainDecoder.MAX_MIXED_INDEXES:
+            best = sorted(mix_set, key=len)[: FileFountainDecoder.MAX_MIXED_INDEXES]
+            mix_set.clear()
+            mix_set.update(best)
 
     def _fragment_path(self, index):
         return self.workdir + "/" + "%s.tmp" % index
@@ -97,9 +109,17 @@ class FileFountainDecoder(FountainDecoder):
                 p.data = frag.read()
 
     def reduce_mixed_by(self, p):
-        new_mixed_indexes = set()
+        # avoid looking for mixed if already got many simple parts
+        if len(self.received_part_indexes) > FileFountainDecoder.LEN_SIMPLE_AVOID_MIX:
+            return
 
+        new_mixed_indexes = set()
         for indexes in self.mixed_part_indexes:
+            # avoid XOR with this mixed parts
+            if len(indexes) > FileFountainDecoder.MAX_MIXED_XOR_DEGREE:
+                new_mixed_indexes.add(indexes)
+                continue
+
             value_bytearray = bytearray(self.expected_fragment_len)
             with open(self._fragment_path_mixed(indexes), "rb") as mixed_frag:
                 mixed_frag.readinto(value_bytearray)
@@ -112,6 +132,7 @@ class FileFountainDecoder(FountainDecoder):
                 self._store_fragment(reduced.indexes, reduced)
                 new_mixed_indexes.add(reduced.indexes)
 
+        self._limit_mixed_set(new_mixed_indexes)
         self.mixed_part_indexes.clear()
         self.mixed_part_indexes.update(new_mixed_indexes)
 
@@ -146,3 +167,4 @@ class FileFountainDecoder(FountainDecoder):
             # Record this new mixed part
             self._store_fragment(reduced.indexes, reduced)
             self.mixed_part_indexes.add(reduced.indexes)
+            self._limit_mixed_set(self.mixed_part_indexes)
