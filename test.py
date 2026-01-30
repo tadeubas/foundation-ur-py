@@ -666,11 +666,48 @@ class TestUR(BaseClass):
 
         decoder = URDecoder()
         for part in arbitrary_parts:
-            decoder.receive_part(part.decode())
+            decoder.receive_part(part)
 
         assert(decoder.is_complete())
         assert(decoder.is_success())
         assert(decoder.result.cbor == data)
+
+    def test_ur_multipart_crypto_psbt(self):
+        TEST_PARTS_FORMAT_MULTIPART_UR = [
+        "UR:CRYPTO-PSBT/2-8/LPAOAYCFADCYCYAMGRMSWLHDDKPLKOONCMSWQDAMPAHLVLOYGLAEAEAEAEAEZCZMZMZMAOKEFHHLAHAEAEAEAECMAEBBDLEEPKTPCPNYDE",
+        "UR:CRYPTO-PSBT/1-8/LPADAYCFADCYCYAMGRMSWLHDDKHKADCHJOJKIDJYZMADAEJSAOAEAEAEADTKFNHDSRDTLFPLCXGDLOTARYGAWMNDAOPSURGTFSWMWKINVA",
+        "UR:CRYPTO-PSBT/3-8/LPAXAYCFADCYCYAMGRMSWLHDDKCEWTBKGUPFGOOEMENBFTKIFEWTOLMKLUGMLAMTMKAEAEAEAEAECMAEBBVAIMZEZMSRLSMNJSEYLANEGY",
+        "UR:CRYPTO-PSBT/4-8/LPAAAYCFADCYCYAMGRMSWLHDDKWTOEKGATVLPFBAUEIMVSVYHNAEAEAEAEAEADADCTAEVYYKAHAEAEAEAECMAEBBTISSOTWSASKEISUOLD",
+        "UR:CRYPTO-PSBT/5-8/LPAHAYCFADCYCYAMGRMSWLHDDKWLMSRPWLNNESKBGYMYVLVECYBYLKOYCPAMAOVDPYDAEMRETYNNMSAXASPKVTJTNNGAWFJZVYCHTBFXAX",
+        "UR:CRYPTO-PSBT/6-8/LPAMAYCFADCYCYAMGRMSWLHDDKSOZERKTYGLSPVTTTSFNBQZYTSRCFCSJKSKTNBKGHAEAELAADAEAELAAEAEAELAAEAEAEAEAESTWNCSTL",
+        "UR:CRYPTO-PSBT/7-8/LPATAYCFADCYCYAMGRMSWLHDDKAEAEAEAECPAOAXHLGAWPSNGHTIASNNFXIOIDKTSTOLTYIDHLHSCAPDLEHLWKNDYTGYKNKTMEVLTDQZHN",
+        "UR:CRYPTO-PSBT/8-8/LPAYAYCFADCYCYAMGRMSWLHDDKOSKTONCSJKSKTNBKGHAEAELAADAEAELAAEAEAELAADAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEFXKTBTBB",
+        ]
+
+        decoder = URDecoder()
+
+        for part in TEST_PARTS_FORMAT_MULTIPART_UR:
+            decoder.receive_part(part)
+
+        assert(decoder.is_complete())
+        assert(decoder.is_success())
+        assert(decoder.result.cbor.find(b'psbt') > -1)
+
+    def test_fountain_encoder_nominal_frag_lenght(self):
+        test_values = [
+            # message_len, min_frag_len, max_frag_len
+            (282, 10, 10),
+            (111, 9, 12),
+            (33, 2, 1),
+        ]
+
+        for v in test_values:
+            value = FountainEncoder.find_nominal_fragment_length(v[0],v[1],v[2])
+
+            # should respect min / max frag_len
+            if v[1] <= v[2]:
+                assert value >= v[1]
+            assert value <= v[2]
 
 if __name__ == '__main__':
     if unittest != None:

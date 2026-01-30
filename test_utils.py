@@ -11,6 +11,8 @@ from ur.constants import MAX_UINT64
 from ur.ur import UR
 
 def eq_for_tests(self, obj):
+    if obj == None:
+        return False
     return self.type == obj.type and self.cbor == obj.cbor
 
 UR.__eq__ = eq_for_tests
