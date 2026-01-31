@@ -7,7 +7,14 @@
 
 # VERSION 2.0.0
 
-from .utils import is_ur_type
+
+def is_ur_type(_type):
+    if isinstance(_type, str):
+        _type = _type.encode()
+    for o in _type:
+        return (
+            (97 <= o <= 122) or (65 <= o <= 90) or (48 <= o <= 57) or (o == 45)
+        )  # a–z  # A–Z  # 0–9  # '-'
 
 
 class UR:

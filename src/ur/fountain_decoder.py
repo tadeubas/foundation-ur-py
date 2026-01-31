@@ -9,13 +9,26 @@ from .fountain_utils import (
     choose_fragments,
     reset_degree_cache,
 )
-from .utils import join_bytes, xor_into
-from .crc32 import crc32
 from .basic_decoder import BasicDecoder
 
 
 class InvalidChecksum(Exception):
     pass
+
+
+def join_bytes(chunks):
+    total = 0
+    for c in chunks:
+        total += len(c)
+
+    out = bytearray(total)
+    pos = 0
+    for c in chunks:
+        l = len(c)
+        out[pos : pos + l] = c
+        pos += l
+
+    return out
 
 
 class FountainDecoder(BasicDecoder):
@@ -141,6 +154,9 @@ class FountainDecoder(BasicDecoder):
             new_data = a.data
             if not isinstance(new_data, bytearray):
                 new_data = bytearray(a.data)
+
+            from .utils import xor_into
+
             xor_into(new_data, b.data)
 
             return self.Part(new_indexes, new_data)
@@ -160,6 +176,8 @@ class FountainDecoder(BasicDecoder):
         message = self.join_fragments(fragments, self.expected_message_len)
 
         # Verify the message checksum and note success or failure
+        from .crc32 import crc32
+
         checksum = crc32(message)
         if checksum == self.expected_checksum:
             self.result = message

@@ -5,11 +5,9 @@
 # Licensed under the "BSD-2-Clause Plus Patent License"
 #
 
-from .cbor_lite import CBORDecoder, CBOREncoder
 from .fountain_utils import choose_fragments, reset_degree_cache
 from .utils import xor_into
 from .constants import MAX_UINT32
-from .crc32 import crc32
 
 
 class Part:
@@ -25,6 +23,8 @@ class Part:
 
     @staticmethod
     def from_cbor(cbor_buf):
+        from .cbor_lite import CBORDecoder
+
         decoder = CBORDecoder(cbor_buf)
         (array_size, _) = decoder.decodeArraySize()
         if array_size != 5:
@@ -39,6 +39,8 @@ class Part:
         return Part(seq_num, seq_len, message_len, checksum, data)
 
     def cbor(self):
+        from .cbor_lite import CBOREncoder
+
         encoder = CBOREncoder()
         encoder.encodeArraySize(5)
         encoder.encodeInteger(self.seq_num)
@@ -53,6 +55,8 @@ class FountainEncoder:
     def __init__(self, message, max_fragment_len, first_seq_num=0, min_fragment_len=10):
         assert isinstance(message, bytearray)
         assert len(message) <= MAX_UINT32
+
+        from .crc32 import crc32
 
         self.message = memoryview(message)
         self.message_len = len(message)

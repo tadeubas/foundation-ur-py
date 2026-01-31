@@ -6,7 +6,6 @@
 #
 
 from array import array
-from .utils import int_to_bytes
 from .xoshiro256 import Xoshiro256
 
 
@@ -100,7 +99,7 @@ def choose_fragments(seq_num, seq_len, checksum):
     if seq_num <= seq_len:
         return frozenset([seq_num - 1])
 
-    seed = int_to_bytes(seq_num) + int_to_bytes(checksum)
+    seed = seq_num.to_bytes(4, "big") + checksum.to_bytes(4, "big")
     rng = Xoshiro256.from_bytes(seed)
     degree = choose_degree(seq_len, rng)
 
