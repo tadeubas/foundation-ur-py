@@ -501,6 +501,67 @@ class TestUR(BaseClass):
         expected_parts = [s.upper() for s in expected_parts]
         assert(parts == expected_parts)
 
+    def test_minimal_cbor_encoder(self):
+        from ur.cbor_lite import CBOREncoder
+
+        def _encodeInt(val):
+            enc = CBOREncoder()
+            size = enc.encodeInteger(val)
+            return (size, enc.get_bytes())
+        
+        def _encodeUns(val):
+            enc = CBOREncoder()
+            size = enc.encodeUnsigned(val)
+            return (size, enc.get_bytes())
+        
+        def _encodeBytes(val):
+            enc = CBOREncoder()
+            size = enc.encodeBytes(val)
+            return (size, enc.get_bytes())
+        
+        def _encodeArray(val):
+            enc = CBOREncoder()
+            size = enc.encodeArraySize(val)
+            return (size, enc.get_bytes())
+
+
+        # [ 1-byte initial tag header ] + [ 0 | 1 | 2 | 4 | 8 bytes of payload ]
+        # 3 bytes test (will encode as header + 4)
+        size, val = _encodeInt(0x11170)  # 70000
+
+        expected_cbor = b'\x1a\x00\x01\x11\x70'
+        assert size == len(expected_cbor) # 5
+        assert val == expected_cbor
+
+        # 5 bytes test (will encode as header + 8)
+        size, val = _encodeInt(0x102030405)  # 4328719365
+
+        expected_cbor = b'\x1b\x00\x00\x00\x01\x02\x03\x04\x05'
+        assert size == len(expected_cbor) # 9
+        assert val == expected_cbor
+
+        # various tests
+        # unsigned int
+        assert _encodeUns(0)  == (1, b"\x00")
+        assert _encodeUns(1)  == (1, b"\x01")
+        assert _encodeUns(23) == (1, b"\x17")
+        assert _encodeUns(24) == (2, b"\x18\x18")
+        assert _encodeUns(255) == (2, b"\x18\xff")
+        assert _encodeUns(256) == (3, b"\x19\x01\x00")
+        assert _encodeUns(65535) == (3, b"\x19\xff\xff")
+        assert _encodeUns(65536) == (5, b"\x1a\x00\x01\x00\x00")
+
+        # byte
+        assert _encodeBytes(b"") == (1, b"\x40")
+        assert _encodeBytes(b"a") == (2, b"\x41a")
+        assert _encodeBytes(b"a" * 23) == (24, b"\x57" + b"a" * 23)
+        assert _encodeBytes(b"a" * 24) == (26, b"\x58\x18" + b"a" * 24)
+
+        # array size
+        assert _encodeArray(0) == (1, b"\x80")
+        assert _encodeArray(23) == (1, b"\x97")
+        assert _encodeArray(24) == (2, b"\x98\x18")
+        
     def test_multipart_ur(self):
         ur = make_message_ur(32767)
         max_fragment_len = 1000

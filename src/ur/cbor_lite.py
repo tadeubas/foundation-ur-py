@@ -17,7 +17,7 @@ Flag_None = 0
 Flag_Require_Minimal_Encoding = 1
 
 Tag_Major_unsignedInteger = 0
-Tag_Major_negativeInteger = 1 << 5
+# Tag_Major_negativeInteger = 1 << 5
 Tag_Major_byteString = 2 << 5
 # Tag_Major_textString = 3 << 5
 Tag_Major_array = 4 << 5
@@ -133,8 +133,8 @@ class CBOREncoder:
     def encodeUnsigned(self, value):
         return self.encodeTagAndValue(Tag_Major_unsignedInteger, value)
 
-    def encodeNegative(self, value):
-        return self.encodeTagAndValue(Tag_Major_negativeInteger, value)
+    # def encodeNegative(self, value):
+    #     return self.encodeTagAndValue(Tag_Major_negativeInteger, value)
 
     def encodeInteger(self, value):
         if value >= 0:
