@@ -43,10 +43,10 @@ class Part:
 
         encoder = CBOREncoder()
         encoder.encodeArraySize(5)
-        encoder.encodeInteger(self.seq_num)
-        encoder.encodeInteger(self.seq_len)
-        encoder.encodeInteger(self.message_len)
-        encoder.encodeInteger(self.checksum)
+        encoder.encodeUnsigned(self.seq_num)
+        encoder.encodeUnsigned(self.seq_len)
+        encoder.encodeUnsigned(self.message_len)
+        encoder.encodeUnsigned(self.checksum)
         encoder.encodeBytes(self.data)
         return encoder.get_bytes()
 

@@ -504,10 +504,10 @@ class TestUR(BaseClass):
     def test_minimal_cbor_encoder(self):
         from ur.cbor_lite import CBOREncoder
 
-        def _encodeInt(val):
-            enc = CBOREncoder()
-            size = enc.encodeInteger(val)
-            return (size, enc.get_bytes())
+        # def _encodeNeg(val):
+        #     enc = CBOREncoder()
+        #     size = enc.encodeNegative(val)
+        #     return (size, enc.get_bytes())
         
         def _encodeUns(val):
             enc = CBOREncoder()
@@ -527,14 +527,14 @@ class TestUR(BaseClass):
 
         # [ 1-byte initial tag header ] + [ 0 | 1 | 2 | 4 | 8 bytes of payload ]
         # 3 bytes test (will encode as header + 4)
-        size, val = _encodeInt(0x11170)  # 70000
+        size, val = _encodeUns(0x11170)  # 70000
 
         expected_cbor = b'\x1a\x00\x01\x11\x70'
         assert size == len(expected_cbor) # 5
         assert val == expected_cbor
 
         # 5 bytes test (will encode as header + 8)
-        size, val = _encodeInt(0x102030405)  # 4328719365
+        size, val = _encodeUns(0x102030405)  # 4328719365
 
         expected_cbor = b'\x1b\x00\x00\x00\x01\x02\x03\x04\x05'
         assert size == len(expected_cbor) # 9
@@ -550,6 +550,14 @@ class TestUR(BaseClass):
         assert _encodeUns(256) == (3, b"\x19\x01\x00")
         assert _encodeUns(65535) == (3, b"\x19\xff\xff")
         assert _encodeUns(65536) == (5, b"\x1a\x00\x01\x00\x00")
+
+        # assert _encodeNeg(-1)  == (1, b"\x20")
+        # assert _encodeNeg(-23) == (1, b"\x36")
+        # assert _encodeNeg(-24) == (1, b"\x37")
+        # assert _encodeNeg(-255) == (2, b"\x38\xfe")
+        # assert _encodeNeg(-256) == (2, b"\x38\xff")
+        # assert _encodeNeg(-65535) == (3, b"\x39\xff\xfe")
+        # assert _encodeNeg(-65536) == (3, b"\x39\xff\xff")
 
         # byte
         assert _encodeBytes(b"") == (1, b"\x40")

@@ -134,12 +134,12 @@ class CBOREncoder:
         return self.encodeTagAndValue(Tag_Major_unsignedInteger, value)
 
     # def encodeNegative(self, value):
-    #     return self.encodeTagAndValue(Tag_Major_negativeInteger, value)
+    #     return self.encodeTagAndValue(Tag_Major_negativeInteger, -1 - value)
 
-    def encodeInteger(self, value):
-        if value >= 0:
-            return self.encodeUnsigned(value)
-        return self.encodeNegative(value)
+    # def encodeInteger(self, value):
+    #     if value >= 0:
+    #         return self.encodeUnsigned(value)
+    #     return self.encodeNegative(value)
 
     def encodeBytes(self, value):
         length = self.encodeTagAndValue(Tag_Major_byteString, len(value))
